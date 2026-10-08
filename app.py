@@ -6,7 +6,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="Đánh giá KPI Trạm 3G/4G", layout="wide")
 
-# 1. NHÚNG CSS VÀ JS (TỐI ƯU HIỂN THỊ RÕ RỆT 2 KHỐI 3G VÀ 4G)
+# 1. NHÚNG CSS VÀ JS (TỐI ƯU RESPONSIVE CHO CẢ PC VÀ ĐIỆN THOẠI)
 st.markdown("""
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
@@ -50,7 +50,7 @@ st.markdown("""
     }
     .table-custom td { padding: 8px 10px; border-bottom: 1px solid #333; white-space: nowrap; }
     
-    /* ĐÓNG BĂNG 2 DÒNG TIÊU ĐỀ CHO BẢNG GỘP */
+    /* ĐÓNG BĂNG 2 DÒNG TIÊU ĐỀ CHO BẢNG GỘP (MẶC ĐỊNH TRÊN PC) */
     .combined-table thead tr:first-child th { top: 0; z-index: 5; height: 45px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; }
     .combined-table thead tr:nth-child(2) th { top: 45px; z-index: 4; }
     
@@ -58,30 +58,42 @@ st.markdown("""
 
     /* MÀU SẮC RIÊNG BIỆT CHO KHỐI 4G VÀ 3G */
     .th-group-4g {
-        background-color: #0288d1 !important; /* Xanh dương sáng 4G */
+        background-color: #0288d1 !important; 
         color: #ffffff !important;
         text-align: center !important;
-        border-right: 3px solid #ffeb3b !important; /* Vạch vàng ranh giới rõ ràng */
+        border-right: 3px solid #ffeb3b !important; 
         font-size: 14px !important;
     }
     .th-group-3g {
-        background-color: #e65100 !important; /* Cam đậm / Hổ phách 3G */
+        background-color: #e65100 !important; 
         color: #ffffff !important;
         text-align: center !important;
         font-size: 14px !important;
     }
 
-    /* FREEZE CỘT CHO BẢNG 1 (MÃ TRẠM & TÊN TRẠM) */
+    /* ĐÓNG BĂNG CỘT TRÊN PC */
     .f-col1 { position: sticky !important; left: 0 !important; min-width: 140px; max-width: 140px; white-space: normal !important; word-wrap: break-word; }
     .f-col2 { position: sticky !important; left: 140px !important; min-width: 200px; max-width: 200px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; }
     th.f-col1, th.f-col2 { z-index: 6 !important; background-color: #1e293b !important; } 
     td.f-col1, td.f-col2 { background-color: #1e1e1e !important; color: #eee !important; z-index: 2; }
 
-    /* FREEZE CỘT CHO BẢNG 2 (THỜI GIAN & CELL) */
     .f-time { position: sticky !important; left: 0 !important; min-width: 180px; max-width: 180px; white-space: normal !important; word-wrap: break-word; }
     .f-cell { position: sticky !important; left: 180px !important; min-width: 220px; max-width: 220px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; }
     th.f-time, th.f-cell { z-index: 6 !important; background-color: #1e293b !important; } 
     td.f-time, td.f-cell { background-color: #1e1e1e !important; color: #eee !important; z-index: 2; }
+
+    /* 📱 TỐI ƯU RIÊNG CHO ĐIỆN THOẠI (MÀN HÌNH DỌC DƯỚI 768px): TẮT CỐ ĐỊNH CỘT ĐỂ KHÔNG BỊ CHE */
+    @media screen and (max-width: 768px) {
+        .f-col1, .f-col2, .f-time, .f-cell {
+            position: static !important;
+            min-width: auto !important;
+            max-width: none !important;
+            border-right: 1px solid #333 !important;
+        }
+        td.f-col1, td.f-col2, td.f-time, td.f-cell {
+            background-color: transparent !important;
+        }
+    }
 
     .header-station { background-color: #1e293b; padding: 12px 16px; border-left: 5px solid #1976d2; border-radius: 4px; margin: 15px 0 5px 0; color: #fff; }
     .kpi-target { font-size: 11px; color: #ffeb3b; display: block; margin-top: 2px; }
@@ -219,7 +231,7 @@ file_4g = tim_file_excel("4G")
 file_mapping = tim_file_excel("TRAM") or tim_file_excel("MÃ") or tim_file_excel("MA")
 
 if not (file_mapping and file_3g and file_4g):
-    st.title("📊 Kiểm Tra & Đánh Giá KPI Tuần")
+    st.title("📊 Kiểm Tra & Đánh Giá KPI Trạm Theo Tuần")
     st.error("⚠️ Hệ thống chưa tìm đủ 3 file hoặc tên file không chứa đúng từ khóa ('3G', '4G', 'TRAM'). Vui lòng chờ Admin cập nhật!")
     st.stop()
 
@@ -241,8 +253,8 @@ bv_cr_codes = [k for k, v in dict_station.items() if str(v).strip().lower() == '
 grouped_cr_key = None
 
 if len(bv_cr_codes) > 1:
-    grouped_cr_key = "   ".join(bv_cr_codes)
-    dict_station[grouped_cr_key] = "Bv Chợ Rẫy"
+    grouped_cr_key = " / ".join(bv_cr_codes)
+    dict_station[grouped_cr_key] = "Bv Chợ Rẫy (Gộp chung)"
     all_stations_ui = [k for k in all_stations_raw if k not in bv_cr_codes]
     all_stations_ui.append(grouped_cr_key)
 else:
@@ -305,10 +317,10 @@ if not display_time:
     display_time = datetime.now().strftime("%d/%m/%Y")
 
 # 1. TIÊU ĐỀ 
-st.title(f"📊 Kiểm Tra & Đánh Giá KPI Tuần ({display_time})")
+st.title(f"📊 Kiểm Tra & Đánh Giá KPI Trạm Theo Tuần ({display_time})")
 
-# ----------------- 2. BẢNG TRUNG BÌNH GỘP (CÓ FREEZE PANES VÀ CHIA NHÓM RÕ RỆT) -----------------
-with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM", expanded=True):
+# ----------------- 2. BẢNG TRUNG BÌNH GỘP -----------------
+with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM (GỘP CHUNG 3G & 4G)", expanded=True):
     col_filter1, col_filter2 = st.columns([1, 1.5])
     
     with col_filter1:
@@ -331,7 +343,6 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
     len_4g = len(active_kpis_4g)
     len_3g = len(active_kpis_3g)
 
-    # Khởi tạo Tiêu đề Bảng với cấu trúc Dòng 1 (Gộp Nhóm màu sắc tương phản cao) và Dòng 2 (Chi tiết)
     table_header_html = f"""
     <div class='table-responsive-wrapper'>
     <table class='table-custom combined-table'>
@@ -346,7 +357,6 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
         <tr>
     """
     
-    # Render Dòng 2 (Tiêu đề các cột KPI)
     for rule in active_kpis_4g.values():
         table_header_html += f"<th style='text-align:right;'>{rule['label']}</th>"
     for rule in active_kpis_3g.values():
@@ -364,7 +374,6 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
         station_failed = False
         cols_td = ""
         
-        # Duyệt 4G
         for c, rule in active_kpis_4g.items():
             val = mean_4g.loc[st_code, c] if (not mean_4g.empty and st_code in mean_4g.index and c in mean_4g.columns) else None
             is_ok, formatted_val = evaluate_val(val, rule)
@@ -378,7 +387,6 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
                 else:
                     cols_td += f"<td style='text-align:right;'>{formatted_val}</td>"
 
-        # Duyệt 3G
         for c, rule in active_kpis_3g.items():
             val = mean_3g.loc[st_code, c] if (not mean_3g.empty and st_code in mean_3g.index and c in mean_3g.columns) else None
             is_ok, formatted_val = evaluate_val(val, rule)
@@ -452,7 +460,6 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
         </tr></thead><tbody>
         """)
 
-        # DÒNG TRUNG BÌNH TOÀN TRẠM
         avg_cols_html = ""
         avg_is_pass = True
         for col_name, rule in active_kpis.items():
@@ -468,7 +475,6 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
         
         html_blocks.append(f"<tr style='background-color: #1a1a1a;'><td class='f-time' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffffff;'>📅 <b>TRUNG BÌNH TRẠM</b></span></td><td class='f-cell' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffffff;'>↳ Toàn Trạm</span></td><td style='text-align:center; border-bottom: 2px solid #444;'>{avg_badge}</td>{avg_cols_html}</tr>")
 
-        # CÁC DÒNG CELL CON
         for _, row in group.iterrows():
             time_val = clean_time_string(row[time_col]) if time_col else ""
             cell_name = str(row[cell_col])
