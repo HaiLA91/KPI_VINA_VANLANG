@@ -219,7 +219,7 @@ file_4g = tim_file_excel("4G")
 file_mapping = tim_file_excel("TRAM") or tim_file_excel("MÃ") or tim_file_excel("MA")
 
 if not (file_mapping and file_3g and file_4g):
-    st.title("📊 Kiểm Tra & Đánh Giá KPI Trạm Theo Tuần")
+    st.title("📊 Kiểm Tra & Đánh Giá KPI VINAPHONE Tuần")
     st.error("⚠️ Hệ thống chưa tìm đủ 3 file hoặc tên file không chứa đúng từ khóa ('3G', '4G', 'TRAM'). Vui lòng chờ Admin cập nhật!")
     st.stop()
 
@@ -305,7 +305,7 @@ if not display_time:
     display_time = datetime.now().strftime("%d/%m/%Y")
 
 # 1. TIÊU ĐỀ 
-st.title(f"📊 Kiểm Tra & Đánh Giá KPI Trạm Theo Tuần ({display_time})")
+st.title(f"📊 Kiểm Tra & Đánh Giá KPI VINAPHONE Tuần ({display_time})")
 
 # ----------------- 2. BẢNG TRUNG BÌNH GỘP -----------------
 with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM (GỘP CHUNG 3G & 4G)", expanded=True):
