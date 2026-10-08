@@ -6,7 +6,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="Đánh giá KPI Trạm 3G/4G", layout="wide")
 
-# 1. NHÚNG CSS VÀ JS (TÍCH HỢP FREEZE PANES CHUẨN EXCEL)
+# 1. NHÚNG CSS VÀ JS (ĐÓNG BĂNG 2 DÒNG TIÊU ĐỀ & CHIA NHÓM 3G/4G)
 st.markdown("""
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
@@ -18,13 +18,12 @@ st.markdown("""
     .badge-fail { background-color: #ffebee; color: #c62828; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
     .badge-nodata { background-color: #f5f5f5; color: #757575; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
     
-    /* VÙNG CHỨA BẢNG: Giới hạn chiều cao để kích hoạt thanh cuộn dọc (Freeze Header) */
     .table-responsive-wrapper {
         width: 100%;
         max-width: 100vw;
-        max-height: 70vh; /* Chiều cao tối đa 70% màn hình */
+        max-height: 70vh; 
         overflow-x: auto;
-        overflow-y: auto; /* Kích hoạt cuộn dọc */
+        overflow-y: auto; 
         border: 1px solid #444;
         border-radius: 6px;
         margin-top: 10px;
@@ -41,28 +40,34 @@ st.markdown("""
     /* FREEZE DÒNG TIÊU ĐỀ (HEADER) */
     .table-custom th { 
         position: sticky; 
-        top: 0; /* Bám chặt vào mép trên */
         background-color: #212529; 
         color: #eee; 
         text-align: left; 
         padding: 8px 10px; 
         border-bottom: 2px solid #555; 
-        vertical-align: top; 
+        vertical-align: middle; 
         white-space: nowrap; 
-        z-index: 1; /* Nổi lên trên các ô dữ liệu */
+        box-sizing: border-box;
     }
     .table-custom td { padding: 8px 10px; border-bottom: 1px solid #333; white-space: nowrap; }
     
+    /* XỬ LÝ ĐÓNG BĂNG 2 DÒNG TIÊU ĐỀ CHO BẢNG GỘP */
+    .combined-table thead tr:first-child th { top: 0; z-index: 5; height: 42px; }
+    .combined-table thead tr:nth-child(2) th { top: 42px; z-index: 4; }
+    
+    /* XỬ LÝ ĐÓNG BĂNG 1 DÒNG TIÊU ĐỀ CHO BẢNG CHI TIẾT CELL */
+    .detail-table thead tr:first-child th { top: 0; z-index: 5; }
+
     /* FREEZE CỘT CHO BẢNG 1 (MÃ TRẠM & TÊN TRẠM) */
     .f-col1 { position: sticky !important; left: 0 !important; min-width: 140px; max-width: 140px; white-space: normal !important; word-wrap: break-word; }
     .f-col2 { position: sticky !important; left: 140px !important; min-width: 200px; max-width: 200px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; }
-    th.f-col1, th.f-col2 { z-index: 4 !important; } /* Giao điểm của Cột Freeze và Dòng Freeze (Góc trái trên) */
+    th.f-col1, th.f-col2 { z-index: 6 !important; background-color: #1e293b !important; } /* Nổi lên góc trên cùng bên trái */
     td.f-col1, td.f-col2 { background-color: #1e1e1e !important; color: #eee !important; z-index: 2; }
 
     /* FREEZE CỘT CHO BẢNG 2 (THỜI GIAN & CELL) */
     .f-time { position: sticky !important; left: 0 !important; min-width: 180px; max-width: 180px; white-space: normal !important; word-wrap: break-word; }
     .f-cell { position: sticky !important; left: 180px !important; min-width: 220px; max-width: 220px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; }
-    th.f-time, th.f-cell { z-index: 4 !important; } 
+    th.f-time, th.f-cell { z-index: 6 !important; background-color: #1e293b !important; } 
     td.f-time, td.f-cell { background-color: #1e1e1e !important; color: #eee !important; z-index: 2; }
 
     .header-station { background-color: #1e293b; padding: 12px 16px; border-left: 5px solid #1976d2; border-radius: 4px; margin: 15px 0 5px 0; color: #fff; }
@@ -289,13 +294,11 @@ if not display_time:
 # 1. TIÊU ĐỀ 
 st.title(f"📊 Kiểm Tra & Đánh Giá KPI Trạm Theo Tuần ({display_time})")
 
-# ----------------- 2. BẢNG TRUNG BÌNH GỘP (CÓ FREEZE PANES) -----------------
+# ----------------- 2. BẢNG TRUNG BÌNH GỘP (CÓ FREEZE PANES VÀ CHIA NHÓM 3G/4G) -----------------
 with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM (GỘP CHUNG 3G & 4G)", expanded=True):
-    # CHIA CỘT ĐỂ ĐẶT BỘ LỌC TÌM KIẾM
     col_filter1, col_filter2 = st.columns([1, 1.5])
     
     with col_filter1:
-        # Đã xóa "Chưa có dữ liệu" khỏi bộ lọc
         filter_choice = st.radio(
             "Bộ lọc kết quả:", 
             ["Tất cả", "Chỉ các trạm ĐẠT", "Các trạm KHÔNG ĐẠT"], 
@@ -303,7 +306,6 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
         )
         
     with col_filter2:
-        # Thêm khung tìm kiếm Mã Trạm
         search_avg_stations = st.multiselect(
             "🔍 Lọc nhanh theo Mã Trạm (Để trống sẽ hiện tất cả):",
             options=all_stations_ui,
@@ -313,15 +315,25 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
     mean_4g = df_4g_prep.groupby('MATCHED_ST')[list(active_kpis_4g.keys())].mean() if df_4g_prep is not None and not df_4g_prep.empty else pd.DataFrame()
     mean_3g = df_3g_prep.groupby('MATCHED_ST')[list(active_kpis_3g.keys())].mean() if df_3g_prep is not None and not df_3g_prep.empty else pd.DataFrame()
 
-    table_header_html = """
+    len_4g = len(active_kpis_4g)
+    len_3g = len(active_kpis_3g)
+
+    # Khởi tạo Tiêu đề Bảng với cấu trúc Dòng 1 (Gộp Nhóm) và Dòng 2 (Chi tiết)
+    table_header_html = f"""
     <div class='table-responsive-wrapper'>
-    <table class='table-custom'>
+    <table class='table-custom combined-table'>
     <thead>
         <tr>
-            <th class='f-col1'>MÃ TRẠM</th>
-            <th class='f-col2'>TÊN TRẠM</th>
-            <th style='text-align:center;'>KQ TỔNG</th>
+            <th class='f-col1' rowspan='2'>MÃ TRẠM</th>
+            <th class='f-col2' rowspan='2'>TÊN TRẠM</th>
+            <th rowspan='2' style='text-align:center;'>KQ TỔNG</th>
+            <th colspan='{len_4g}' style='text-align:center; background-color: #0d47a1 !important; color: #fff; border-bottom: 2px solid #1565c0 !important;'>HỆ THỐNG 4G</th>
+            <th colspan='{len_3g}' style='text-align:center; background-color: #1b5e20 !important; color: #fff; border-bottom: 2px solid #2e7d32 !important;'>HỆ THỐNG 3G</th>
+        </tr>
+        <tr>
     """
+    
+    # Render Dòng 2 (Tiêu đề các cột KPI)
     for rule in active_kpis_4g.values():
         table_header_html += f"<th style='text-align:right;'>{rule['label']}</th>"
     for rule in active_kpis_3g.values():
@@ -331,7 +343,6 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
     rows_merged_html = []
     
     for st_code in all_stations_ui:
-        # Nếu người dùng có chọn mã trạm trong khung tìm kiếm, lọc bỏ các trạm không khớp
         if search_avg_stations and st_code not in search_avg_stations:
             continue
             
@@ -381,7 +392,6 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
         if filter_choice == "Chỉ các trạm ĐẠT" and kq_type != "PASS": continue
         if filter_choice == "Các trạm KHÔNG ĐẠT" and kq_type != "FAIL": continue
 
-        # Đưa class f-col1 và f-col2 vào để đóng băng cột
         rows_merged_html.append(f"<tr><td class='f-col1'><b>{st_code}</b></td><td class='f-col2'>{st_name}</td><td style='text-align:center;'>{badge}</td>{cols_td}</tr>")
 
     full_table_html = table_header_html + "".join(rows_merged_html) + "</tbody></table></div>"
@@ -423,7 +433,7 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
             <span style="color: #666; font-size: 13px; margin-left: 10px;">• {cell_count} cells</span>
         </div>
         <div class='table-responsive-wrapper'>
-        <table class='table-custom'><thead><tr>
+        <table class='table-custom detail-table'><thead><tr>
             <th class='f-time'>THỜI GIAN</th><th class='f-cell'>CELL</th><th style='text-align:center;'>KQ</th>
             {kpi_headers_html}
         </tr></thead><tbody>
@@ -443,7 +453,6 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
 
         avg_badge = "<span class='badge-pass'>ĐẠT</span>" if avg_is_pass else "<span class='badge-fail'>FAIL</span>"
         
-        # Đưa class đóng băng f-time và f-cell vào
         html_blocks.append(f"<tr style='background-color: #1a1a1a;'><td class='f-time' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffffff;'>📅 <b>TRUNG BÌNH TRẠM</b></span></td><td class='f-cell' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffffff;'>↳ Toàn Trạm</span></td><td style='text-align:center; border-bottom: 2px solid #444;'>{avg_badge}</td>{avg_cols_html}</tr>")
 
         # CÁC DÒNG CELL CON
