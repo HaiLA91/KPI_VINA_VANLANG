@@ -6,7 +6,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="Đánh giá KPI Trạm 3G/4G", layout="wide")
 
-# 1. NHÚNG CSS VÀ JS (TỐI ƯU RESPONSIVE CHO CẢ PC VÀ ĐIỆN THOẠI)
+# 1. NHÚNG CSS VÀ JS (CỐ ĐỊNH CỘT TRÁI TUYỆT ĐỐI TRÊN CẢ MOBILE VÀ PC)
 st.markdown("""
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
@@ -50,13 +50,12 @@ st.markdown("""
     }
     .table-custom td { padding: 8px 10px; border-bottom: 1px solid #333; white-space: nowrap; }
     
-    /* ĐÓNG BĂNG 2 DÒNG TIÊU ĐỀ CHO BẢNG GỘP (MẶC ĐỊNH TRÊN PC) */
+    /* ĐÓNG BĂNG 2 DÒNG TIÊU ĐỀ CHO BẢNG GỘP */
     .combined-table thead tr:first-child th { top: 0; z-index: 5; height: 45px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; }
     .combined-table thead tr:nth-child(2) th { top: 45px; z-index: 4; }
     
     .detail-table thead tr:first-child th { top: 0; z-index: 5; }
 
-    /* MÀU SẮC RIÊNG BIỆT CHO KHỐI 4G VÀ 3G */
     .th-group-4g {
         background-color: #0288d1 !important; 
         color: #ffffff !important;
@@ -71,29 +70,18 @@ st.markdown("""
         font-size: 14px !important;
     }
 
-    /* ĐÓNG BĂNG CỘT TRÊN PC */
-    .f-col1 { position: sticky !important; left: 0 !important; min-width: 140px; max-width: 140px; white-space: normal !important; word-wrap: break-word; }
-    .f-col2 { position: sticky !important; left: 140px !important; min-width: 200px; max-width: 200px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; }
+    /* ĐÓNG BĂNG CỘT TRÁI CỐ ĐỊNH (ÁP DỤNG CẢ TRÊN PC LẪN MOBILE) */
+    .f-col1 { position: sticky !important; left: 0 !important; min-width: 120px; max-width: 120px; white-space: normal !important; word-wrap: break-word; z-index: 3; }
+    .f-col2 { position: sticky !important; left: 120px !important; min-width: 160px; max-width: 160px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 3; }
+    
     th.f-col1, th.f-col2 { z-index: 6 !important; background-color: #1e293b !important; } 
-    td.f-col1, td.f-col2 { background-color: #1e1e1e !important; color: #eee !important; z-index: 2; }
+    td.f-col1, td.f-col2 { background-color: #1e1e1e !important; color: #eee !important; }
 
-    .f-time { position: sticky !important; left: 0 !important; min-width: 180px; max-width: 180px; white-space: normal !important; word-wrap: break-word; }
-    .f-cell { position: sticky !important; left: 180px !important; min-width: 220px; max-width: 220px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; }
+    .f-time { position: sticky !important; left: 0 !important; min-width: 150px; max-width: 150px; white-space: normal !important; word-wrap: break-word; z-index: 3; }
+    .f-cell { position: sticky !important; left: 150px !important; min-width: 180px; max-width: 180px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 3; }
+    
     th.f-time, th.f-cell { z-index: 6 !important; background-color: #1e293b !important; } 
-    td.f-time, td.f-cell { background-color: #1e1e1e !important; color: #eee !important; z-index: 2; }
-
-    /* 📱 TỐI ƯU RIÊNG CHO ĐIỆN THOẠI (MÀN HÌNH DỌC DƯỚI 768px): TẮT CỐ ĐỊNH CỘT ĐỂ KHÔNG BỊ CHE */
-    @media screen and (max-width: 768px) {
-        .f-col1, .f-col2, .f-time, .f-cell {
-            position: static !important;
-            min-width: auto !important;
-            max-width: none !important;
-            border-right: 1px solid #333 !important;
-        }
-        td.f-col1, td.f-col2, td.f-time, td.f-cell {
-            background-color: transparent !important;
-        }
-    }
+    td.f-time, td.f-cell { background-color: #1e1e1e !important; color: #eee !important; }
 
     .header-station { background-color: #1e293b; padding: 12px 16px; border-left: 5px solid #1976d2; border-radius: 4px; margin: 15px 0 5px 0; color: #fff; }
     .kpi-target { font-size: 11px; color: #ffeb3b; display: block; margin-top: 2px; }
