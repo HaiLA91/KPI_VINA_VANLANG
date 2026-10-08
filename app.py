@@ -241,7 +241,7 @@ bv_cr_codes = [k for k, v in dict_station.items() if str(v).strip().lower() == '
 grouped_cr_key = None
 
 if len(bv_cr_codes) > 1:
-    grouped_cr_key = " / ".join(bv_cr_codes)
+    grouped_cr_key = " ".join(bv_cr_codes)
     dict_station[grouped_cr_key] = "Bv Chợ Rẫy"
     all_stations_ui = [k for k in all_stations_raw if k not in bv_cr_codes]
     all_stations_ui.append(grouped_cr_key)
