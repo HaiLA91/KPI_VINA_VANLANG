@@ -291,11 +291,24 @@ st.title(f"📊 Kiểm Tra & Đánh Giá KPI Trạm Theo Tuần ({display_time})
 
 # ----------------- 2. BẢNG TRUNG BÌNH GỘP (CÓ FREEZE PANES) -----------------
 with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM (GỘP CHUNG 3G & 4G)", expanded=True):
-    filter_choice = st.radio(
-        "Bộ lọc kết quả trạm:", 
-        ["Tất cả", "Chỉ các trạm ĐẠT", "Các trạm KHÔNG ĐẠT", "Chưa có dữ liệu"], 
-        horizontal=True
-    )
+    # CHIA CỘT ĐỂ ĐẶT BỘ LỌC TÌM KIẾM
+    col_filter1, col_filter2 = st.columns([1, 1.5])
+    
+    with col_filter1:
+        # Đã xóa "Chưa có dữ liệu" khỏi bộ lọc
+        filter_choice = st.radio(
+            "Bộ lọc kết quả:", 
+            ["Tất cả", "Chỉ các trạm ĐẠT", "Các trạm KHÔNG ĐẠT"], 
+            horizontal=True
+        )
+        
+    with col_filter2:
+        # Thêm khung tìm kiếm Mã Trạm
+        search_avg_stations = st.multiselect(
+            "🔍 Lọc nhanh theo Mã Trạm (Để trống sẽ hiện tất cả):",
+            options=all_stations_ui,
+            format_func=lambda x: f"{x} - {dict_station[x]}"
+        )
     
     mean_4g = df_4g_prep.groupby('MATCHED_ST')[list(active_kpis_4g.keys())].mean() if df_4g_prep is not None and not df_4g_prep.empty else pd.DataFrame()
     mean_3g = df_3g_prep.groupby('MATCHED_ST')[list(active_kpis_3g.keys())].mean() if df_3g_prep is not None and not df_3g_prep.empty else pd.DataFrame()
@@ -318,6 +331,10 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
     rows_merged_html = []
     
     for st_code in all_stations_ui:
+        # Nếu người dùng có chọn mã trạm trong khung tìm kiếm, lọc bỏ các trạm không khớp
+        if search_avg_stations and st_code not in search_avg_stations:
+            continue
+            
         st_name = dict_station.get(st_code, '')
         has_any_data = False
         station_failed = False
@@ -363,7 +380,6 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
 
         if filter_choice == "Chỉ các trạm ĐẠT" and kq_type != "PASS": continue
         if filter_choice == "Các trạm KHÔNG ĐẠT" and kq_type != "FAIL": continue
-        if filter_choice == "Chưa có dữ liệu" and kq_type != "NODATA": continue
 
         # Đưa class f-col1 và f-col2 vào để đóng băng cột
         rows_merged_html.append(f"<tr><td class='f-col1'><b>{st_code}</b></td><td class='f-col2'>{st_name}</td><td style='text-align:center;'>{badge}</td>{cols_td}</tr>")
@@ -371,7 +387,7 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
     full_table_html = table_header_html + "".join(rows_merged_html) + "</tbody></table></div>"
     st.markdown(full_table_html, unsafe_allow_html=True)
 
-# ----------------- 3. BỘ LỌC CHỌN TRẠM CỤ THỂ -----------------
+# ----------------- 3. BỘ LỌC CHỌN TRẠM CỤ THỂ BẢNG CELL -----------------
 selected_stations = st.multiselect(
     "🔍 Chọn Mã Trạm cần xem chi tiết Cell (để trống sẽ hiển thị tất cả các trạm có dữ liệu):",
     options=all_stations_ui,
