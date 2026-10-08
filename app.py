@@ -6,7 +6,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="Đánh giá KPI Trạm 3G/4G", layout="wide")
 
-# 1. NHÚNG CSS VÀ JS (ĐÓNG BĂNG 2 DÒNG TIÊU ĐỀ & CHIA NHÓM 3G/4G)
+# 1. NHÚNG CSS VÀ JS (TỐI ƯU HIỂN THỊ RÕ RỆT 2 KHỐI 3G VÀ 4G)
 st.markdown("""
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
@@ -37,7 +37,6 @@ st.markdown("""
     
     .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; font-family: sans-serif; font-size: 13px; }
     
-    /* FREEZE DÒNG TIÊU ĐỀ (HEADER) */
     .table-custom th { 
         position: sticky; 
         background-color: #212529; 
@@ -51,17 +50,31 @@ st.markdown("""
     }
     .table-custom td { padding: 8px 10px; border-bottom: 1px solid #333; white-space: nowrap; }
     
-    /* XỬ LÝ ĐÓNG BĂNG 2 DÒNG TIÊU ĐỀ CHO BẢNG GỘP */
-    .combined-table thead tr:first-child th { top: 0; z-index: 5; height: 42px; }
-    .combined-table thead tr:nth-child(2) th { top: 42px; z-index: 4; }
+    /* ĐÓNG BĂNG 2 DÒNG TIÊU ĐỀ CHO BẢNG GỘP */
+    .combined-table thead tr:first-child th { top: 0; z-index: 5; height: 45px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; }
+    .combined-table thead tr:nth-child(2) th { top: 45px; z-index: 4; }
     
-    /* XỬ LÝ ĐÓNG BĂNG 1 DÒNG TIÊU ĐỀ CHO BẢNG CHI TIẾT CELL */
     .detail-table thead tr:first-child th { top: 0; z-index: 5; }
+
+    /* MÀU SẮC RIÊNG BIỆT CHO KHỐI 4G VÀ 3G */
+    .th-group-4g {
+        background-color: #0288d1 !important; /* Xanh dương sáng 4G */
+        color: #ffffff !important;
+        text-align: center !important;
+        border-right: 3px solid #ffeb3b !important; /* Vạch vàng ranh giới rõ ràng */
+        font-size: 14px !important;
+    }
+    .th-group-3g {
+        background-color: #e65100 !important; /* Cam đậm / Hổ phách 3G */
+        color: #ffffff !important;
+        text-align: center !important;
+        font-size: 14px !important;
+    }
 
     /* FREEZE CỘT CHO BẢNG 1 (MÃ TRẠM & TÊN TRẠM) */
     .f-col1 { position: sticky !important; left: 0 !important; min-width: 140px; max-width: 140px; white-space: normal !important; word-wrap: break-word; }
     .f-col2 { position: sticky !important; left: 140px !important; min-width: 200px; max-width: 200px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; }
-    th.f-col1, th.f-col2 { z-index: 6 !important; background-color: #1e293b !important; } /* Nổi lên góc trên cùng bên trái */
+    th.f-col1, th.f-col2 { z-index: 6 !important; background-color: #1e293b !important; } 
     td.f-col1, td.f-col2 { background-color: #1e1e1e !important; color: #eee !important; z-index: 2; }
 
     /* FREEZE CỘT CHO BẢNG 2 (THỜI GIAN & CELL) */
@@ -71,7 +84,7 @@ st.markdown("""
     td.f-time, td.f-cell { background-color: #1e1e1e !important; color: #eee !important; z-index: 2; }
 
     .header-station { background-color: #1e293b; padding: 12px 16px; border-left: 5px solid #1976d2; border-radius: 4px; margin: 15px 0 5px 0; color: #fff; }
-    .kpi-target { font-size: 11px; color: #64b5f6; display: block; margin-top: 2px; }
+    .kpi-target { font-size: 11px; color: #ffeb3b; display: block; margin-top: 2px; }
 </style>
 
 <svg style="display:none;" onload="
@@ -193,7 +206,7 @@ def parse_mapping_file(df_map):
                     mapping[m] = t
     return mapping
 
-# ----------------- TỰ ĐỘNG TÌM FILE TỪ GITHUB (KHÔNG DÙNG UPLOADER) -----------------
+# ----------------- TỰ ĐỘNG TÌM FILE TỪ GITHUB -----------------
 def tim_file_excel(tu_khoa):
     for f in os.listdir('.'):
         if f.endswith(('.xlsx', '.xls')) and not f.startswith('~$'):
@@ -294,7 +307,7 @@ if not display_time:
 # 1. TIÊU ĐỀ 
 st.title(f"📊 Kiểm Tra & Đánh Giá KPI Trạm Theo Tuần ({display_time})")
 
-# ----------------- 2. BẢNG TRUNG BÌNH GỘP (CÓ FREEZE PANES VÀ CHIA NHÓM 3G/4G) -----------------
+# ----------------- 2. BẢNG TRUNG BÌNH GỘP (CÓ FREEZE PANES VÀ CHIA NHÓM RÕ RỆT) -----------------
 with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM (GỘP CHUNG 3G & 4G)", expanded=True):
     col_filter1, col_filter2 = st.columns([1, 1.5])
     
@@ -318,7 +331,7 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
     len_4g = len(active_kpis_4g)
     len_3g = len(active_kpis_3g)
 
-    # Khởi tạo Tiêu đề Bảng với cấu trúc Dòng 1 (Gộp Nhóm) và Dòng 2 (Chi tiết)
+    # Khởi tạo Tiêu đề Bảng với cấu trúc Dòng 1 (Gộp Nhóm màu sắc tương phản cao) và Dòng 2 (Chi tiết)
     table_header_html = f"""
     <div class='table-responsive-wrapper'>
     <table class='table-custom combined-table'>
@@ -327,8 +340,8 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
             <th class='f-col1' rowspan='2'>MÃ TRẠM</th>
             <th class='f-col2' rowspan='2'>TÊN TRẠM</th>
             <th rowspan='2' style='text-align:center;'>KQ TỔNG</th>
-            <th colspan='{len_4g}' style='text-align:center; background-color: #0d47a1 !important; color: #fff; border-bottom: 2px solid #1565c0 !important;'>HỆ THỐNG 4G</th>
-            <th colspan='{len_3g}' style='text-align:center; background-color: #1b5e20 !important; color: #fff; border-bottom: 2px solid #2e7d32 !important;'>HỆ THỐNG 3G</th>
+            <th colspan='{len_4g}' class='th-group-4g'>🌐 HỆ THỐNG 4G</th>
+            <th colspan='{len_3g}' class='th-group-3g'>📡 HỆ THỐNG 3G</th>
         </tr>
         <tr>
     """
