@@ -6,31 +6,67 @@ from datetime import datetime
 
 st.set_page_config(page_title="Đánh giá KPI Trạm 3G/4G", layout="wide")
 
-# 1. NHÚNG CSS VÀ JS (ĐÃ FIX LỖI KÉO CHUỘT VÀ KHOẢNG TRẮNG)
+# 1. NHÚNG CSS VÀ JS (TÍCH HỢP FREEZE PANES CHUẨN EXCEL)
 st.markdown("""
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
+    html, body, .stApp { max-width: 100vw !important; overflow-x: hidden !important; }
+
     .kpi-fail { color: #d32f2f; font-weight: bold; }
     .kpi-pass { color: #2e7d32; }
     .badge-pass { background-color: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
     .badge-fail { background-color: #ffebee; color: #c62828; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
     .badge-nodata { background-color: #f5f5f5; color: #757575; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
     
+    /* VÙNG CHỨA BẢNG: Giới hạn chiều cao để kích hoạt thanh cuộn dọc (Freeze Header) */
     .table-responsive-wrapper {
         width: 100%;
+        max-width: 100vw;
+        max-height: 70vh; /* Chiều cao tối đa 70% màn hình */
         overflow-x: auto;
-        border: 1px solid #e0e0e0;
+        overflow-y: auto; /* Kích hoạt cuộn dọc */
+        border: 1px solid #444;
         border-radius: 6px;
         margin-top: 10px;
         margin-bottom: 15px;
         cursor: grab;
         user-select: none;
+        -webkit-overflow-scrolling: touch; 
+        touch-action: pan-x pan-y; 
     }
     .table-responsive-wrapper:active { cursor: grabbing; }
-    .table-custom { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 13px; }
-    .table-custom th { background-color: #f4f6f8; color: #333; text-align: left; padding: 8px 10px; border-bottom: 2px solid #ddd; vertical-align: top; white-space: nowrap; }
-    .table-custom td { padding: 8px 10px; border-bottom: 1px solid #eee; white-space: nowrap; }
-    .header-station { background-color: #f0f7ff; padding: 12px 16px; border-left: 5px solid #1976d2; border-radius: 4px; margin: 15px 0 5px 0; }
-    .kpi-target { font-size: 11px; color: #1976d2; display: block; margin-top: 2px; }
+    
+    .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; font-family: sans-serif; font-size: 13px; }
+    
+    /* FREEZE DÒNG TIÊU ĐỀ (HEADER) */
+    .table-custom th { 
+        position: sticky; 
+        top: 0; /* Bám chặt vào mép trên */
+        background-color: #212529; 
+        color: #eee; 
+        text-align: left; 
+        padding: 8px 10px; 
+        border-bottom: 2px solid #555; 
+        vertical-align: top; 
+        white-space: nowrap; 
+        z-index: 1; /* Nổi lên trên các ô dữ liệu */
+    }
+    .table-custom td { padding: 8px 10px; border-bottom: 1px solid #333; white-space: nowrap; }
+    
+    /* FREEZE CỘT CHO BẢNG 1 (MÃ TRẠM & TÊN TRẠM) */
+    .f-col1 { position: sticky !important; left: 0 !important; min-width: 140px; max-width: 140px; white-space: normal !important; word-wrap: break-word; }
+    .f-col2 { position: sticky !important; left: 140px !important; min-width: 200px; max-width: 200px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; }
+    th.f-col1, th.f-col2 { z-index: 4 !important; } /* Giao điểm của Cột Freeze và Dòng Freeze (Góc trái trên) */
+    td.f-col1, td.f-col2 { background-color: #1e1e1e !important; color: #eee !important; z-index: 2; }
+
+    /* FREEZE CỘT CHO BẢNG 2 (THỜI GIAN & CELL) */
+    .f-time { position: sticky !important; left: 0 !important; min-width: 180px; max-width: 180px; white-space: normal !important; word-wrap: break-word; }
+    .f-cell { position: sticky !important; left: 180px !important; min-width: 220px; max-width: 220px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; }
+    th.f-time, th.f-cell { z-index: 4 !important; } 
+    td.f-time, td.f-cell { background-color: #1e1e1e !important; color: #eee !important; z-index: 2; }
+
+    .header-station { background-color: #1e293b; padding: 12px 16px; border-left: 5px solid #1976d2; border-radius: 4px; margin: 15px 0 5px 0; color: #fff; }
+    .kpi-target { font-size: 11px; color: #64b5f6; display: block; margin-top: 2px; }
 </style>
 
 <svg style="display:none;" onload="
@@ -40,13 +76,15 @@ st.markdown("""
             if(slider.dataset.dragEnabled === 'true') return;
             slider.dataset.dragEnabled = 'true';
             let isDown = false;
-            let startX;
-            let scrollLeft;
+            let startX, startY;
+            let scrollLeft, scrollTop;
             slider.addEventListener('mousedown', (e) => {
                 isDown = true;
                 slider.style.cursor = 'grabbing';
                 startX = e.pageX - slider.offsetLeft;
+                startY = e.pageY - slider.offsetTop;
                 scrollLeft = slider.scrollLeft;
+                scrollTop = slider.scrollTop;
             });
             slider.addEventListener('mouseleave', () => { isDown = false; slider.style.cursor = 'grab'; });
             slider.addEventListener('mouseup', () => { isDown = false; slider.style.cursor = 'grab'; });
@@ -54,12 +92,23 @@ st.markdown("""
                 if(!isDown) return;
                 e.preventDefault();
                 const x = e.pageX - slider.offsetLeft;
-                const walk = (x - startX) * 1.5;
-                slider.scrollLeft = scrollLeft - walk;
+                const y = e.pageY - slider.offsetTop;
+                const walkX = (x - startX) * 1.5;
+                const walkY = (y - startY) * 1.5;
+                slider.scrollLeft = scrollLeft - walkX;
+                slider.scrollTop = scrollTop - walkY;
             });
         });
     }
     setInterval(enableDragScroll, 1000);
+    window.addEventListener('orientationchange', function() {
+        setTimeout(function() {
+            window.dispatchEvent(new Event('resize'));
+            document.body.style.display = 'none';
+            document.body.offsetHeight; 
+            document.body.style.display = '';
+        }, 400); 
+    });
 "></svg>
 """, unsafe_allow_html=True)
 
@@ -240,7 +289,7 @@ if not display_time:
 # 1. TIÊU ĐỀ 
 st.title(f"📊 Kiểm Tra & Đánh Giá KPI Trạm Theo Tuần ({display_time})")
 
-# ----------------- 2. BẢNG TRUNG BÌNH GỘP BỌC TRỌN VẸN -----------------
+# ----------------- 2. BẢNG TRUNG BÌNH GỘP (CÓ FREEZE PANES) -----------------
 with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM (GỘP CHUNG 3G & 4G)", expanded=True):
     filter_choice = st.radio(
         "Bộ lọc kết quả trạm:", 
@@ -256,8 +305,8 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
     <table class='table-custom'>
     <thead>
         <tr>
-            <th>MÃ TRẠM</th>
-            <th>TÊN TRẠM</th>
+            <th class='f-col1'>MÃ TRẠM</th>
+            <th class='f-col2'>TÊN TRẠM</th>
             <th style='text-align:center;'>KQ TỔNG</th>
     """
     for rule in active_kpis_4g.values():
@@ -316,7 +365,8 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
         if filter_choice == "Các trạm KHÔNG ĐẠT" and kq_type != "FAIL": continue
         if filter_choice == "Chưa có dữ liệu" and kq_type != "NODATA": continue
 
-        rows_merged_html.append(f"<tr><td><b>{st_code}</b></td><td>{st_name}</td><td style='text-align:center;'>{badge}</td>{cols_td}</tr>")
+        # Đưa class f-col1 và f-col2 vào để đóng băng cột
+        rows_merged_html.append(f"<tr><td class='f-col1'><b>{st_code}</b></td><td class='f-col2'>{st_name}</td><td style='text-align:center;'>{badge}</td>{cols_td}</tr>")
 
     full_table_html = table_header_html + "".join(rows_merged_html) + "</tbody></table></div>"
     st.markdown(full_table_html, unsafe_allow_html=True)
@@ -358,12 +408,12 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
         </div>
         <div class='table-responsive-wrapper'>
         <table class='table-custom'><thead><tr>
-            <th>THỜI GIAN</th><th>CELL</th><th style='text-align:center;'>KQ</th>
+            <th class='f-time'>THỜI GIAN</th><th class='f-cell'>CELL</th><th style='text-align:center;'>KQ</th>
             {kpi_headers_html}
         </tr></thead><tbody>
         """)
 
-        # DÒNG TRUNG BÌNH TOÀN TRẠM (NỀN ĐEN - ĐÃ FIX MÀU ĐỎ CHO CHỈ SỐ RỚT)
+        # DÒNG TRUNG BÌNH TOÀN TRẠM
         avg_cols_html = ""
         avg_is_pass = True
         for col_name, rule in active_kpis.items():
@@ -376,7 +426,9 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
                 avg_cols_html += f"<td style='text-align:right; border-bottom: 2px solid #444;'><span style='color:#ffffff;'>{formatted_val}</span></td>"
 
         avg_badge = "<span class='badge-pass'>ĐẠT</span>" if avg_is_pass else "<span class='badge-fail'>FAIL</span>"
-        html_blocks.append(f"<tr style='background-color: #1a1a1a;'><td style='border-bottom: 2px solid #444;'><span style='color:#ffffff;'>📅 <b>TRUNG BÌNH TRẠM</b></span></td><td style='border-bottom: 2px solid #444;'><span style='color:#ffffff;'>↳ Toàn Trạm</span></td><td style='text-align:center; border-bottom: 2px solid #444;'>{avg_badge}</td>{avg_cols_html}</tr>")
+        
+        # Đưa class đóng băng f-time và f-cell vào
+        html_blocks.append(f"<tr style='background-color: #1a1a1a;'><td class='f-time' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffffff;'>📅 <b>TRUNG BÌNH TRẠM</b></span></td><td class='f-cell' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffffff;'>↳ Toàn Trạm</span></td><td style='text-align:center; border-bottom: 2px solid #444;'>{avg_badge}</td>{avg_cols_html}</tr>")
 
         # CÁC DÒNG CELL CON
         for _, row in group.iterrows():
@@ -394,7 +446,7 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
                     cols_html += f"<td style='text-align:right;'>{formatted_val}</td>"
 
             status_badge = "<span class='badge-pass'>ĐẠT</span>" if row_is_pass else "<span class='badge-fail'>FAIL</span>"
-            html_blocks.append(f"<tr><td>📅 {time_val}</td><td>↳ {cell_name}</td><td style='text-align:center;'>{status_badge}</td>{cols_html}</tr>")
+            html_blocks.append(f"<tr><td class='f-time'>📅 {time_val}</td><td class='f-cell'>↳ {cell_name}</td><td style='text-align:center;'>{status_badge}</td>{cols_html}</tr>")
 
         html_blocks.append("</tbody></table></div>")
 
