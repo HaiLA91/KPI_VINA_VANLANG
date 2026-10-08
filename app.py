@@ -219,7 +219,7 @@ file_4g = tim_file_excel("4G")
 file_mapping = tim_file_excel("TRAM") or tim_file_excel("MÃ") or tim_file_excel("MA")
 
 if not (file_mapping and file_3g and file_4g):
-    st.title("📊 Kiểm Tra & Đánh Giá KPI Trạm Theo Tuần")
+    st.title("📊 Kiểm Tra & Đánh Giá KPI Tuần")
     st.error("⚠️ Hệ thống chưa tìm đủ 3 file hoặc tên file không chứa đúng từ khóa ('3G', '4G', 'TRAM'). Vui lòng chờ Admin cập nhật!")
     st.stop()
 
@@ -242,7 +242,7 @@ grouped_cr_key = None
 
 if len(bv_cr_codes) > 1:
     grouped_cr_key = " / ".join(bv_cr_codes)
-    dict_station[grouped_cr_key] = "Bv Chợ Rẫy (Gộp chung)"
+    dict_station[grouped_cr_key] = "Bv Chợ Rẫy"
     all_stations_ui = [k for k in all_stations_raw if k not in bv_cr_codes]
     all_stations_ui.append(grouped_cr_key)
 else:
@@ -305,10 +305,10 @@ if not display_time:
     display_time = datetime.now().strftime("%d/%m/%Y")
 
 # 1. TIÊU ĐỀ 
-st.title(f"📊 Kiểm Tra & Đánh Giá KPI Trạm Theo Tuần ({display_time})")
+st.title(f"📊 Kiểm Tra & Đánh Giá KPI Tuần ({display_time})")
 
 # ----------------- 2. BẢNG TRUNG BÌNH GỘP (CÓ FREEZE PANES VÀ CHIA NHÓM RÕ RỆT) -----------------
-with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM (GỘP CHUNG 3G & 4G)", expanded=True):
+with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM", expanded=True):
     col_filter1, col_filter2 = st.columns([1, 1.5])
     
     with col_filter1:
