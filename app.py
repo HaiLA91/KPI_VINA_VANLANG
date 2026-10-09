@@ -138,6 +138,7 @@ KPI_THRESHOLDS_4G = {
     'INTERFREQUENCYHO': {'min': 95.0, 'label': 'INTER HO (%)<br><span class="kpi-target">≥ 95%</span>', 'kw': ['INTERFREQUENCYHO', 'INTERFREQ']},
     'HOSRIRATLTEWCDMA': {'min': 90.0, 'label': 'LTE-UMTS (%)<br><span class="kpi-target">≥ 90%</span>', 'kw': ['HOSRIRATLTEWCDMA', 'LTETOWCDMA', 'RATHOSR']},
     'CSFBSSR': {'min': 98.0, 'label': 'CSFB SR (%)<br><span class="kpi-target">≥ 98%</span>', 'kw': ['CSFBSSR', 'SETUPSUCCESSRATIO', 'CSFB']},
+    'ERABSSRATEALL': {'min': 98.5, 'label': 'E-RAB SR (%)<br><span class="kpi-target">≥ 98.5%</span>', 'kw': ['ERABSSRATEALL', 'ERAB']}, # Chỉ tiêu mới
 }
 
 KPI_THRESHOLDS_3G = {
