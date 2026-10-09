@@ -183,7 +183,6 @@ def clean_numeric_series(series):
 
 @st.cache_data
 def load_excel_data(file):
-    st.cache_data.clear()
     return pd.read_excel(file)
 
 @st.cache_data
@@ -261,10 +260,20 @@ def match_station_fn(cell_val):
             return st_code
     return None
 
+@st.cache_data
+def load_net_data(file_name):
+    if os.path.exists(file_name):
+        file_mtime = os.path.getmtime(file_name)
+    else:
+        file_mtime = 0
+    return pd.read_excel(file_name), file_mtime
+
 def prepare_net_df(file_data, kpi_rules):
     if not file_data:
         return None, {}, None, ""
-    df = load_excel_data(file_data)
+    
+    # Sử dụng hàm load_net_data có gắn mốc thời gian file để cache thông minh
+    df, _ = load_net_data(file_data)
     
     cell_col = None
     for c in df.columns:
