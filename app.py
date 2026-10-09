@@ -496,4 +496,4 @@ with tab4g:
 
 with tab3g:
     render_cell_details(df_3g_prep, active_kpis_3g, cols_3g, "3G")
-# AUTO_REBOOT_TIME: 1791524536.2917435
+# AUTO_REBOOT_TIME: 1791524658.9938505
