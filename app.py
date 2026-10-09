@@ -2,7 +2,9 @@ import streamlit as st
 import pandas as pd
 import re
 import os
+import hashlib
 from datetime import datetime
+
 
 st.set_page_config(page_title="Đánh giá KPI Trạm 3G/4G", layout="wide")
 
@@ -182,8 +184,17 @@ def clean_numeric_series(series):
     return pd.to_numeric(s, errors='coerce')
 
 @st.cache_data
-def load_excel_data(file):
-    return pd.read_excel(file)
+def load_excel_data_with_hash(file_path):
+    # Đọc nội dung file thô để tính mã hash độc nhất cho nội dung file đó
+    if os.path.exists(file_path):
+        with open(file_path, "rb") as f:
+            file_bytes = f.read()
+            file_hash = hashlib.md5(file_bytes).hexdigest()
+    else:
+        file_hash = "no_file"
+    
+    # Trả về DataFrame cùng với mã hash để làm bộ nhớ đệm tự động
+    return pd.read_excel(file_path), file_hash
 
 @st.cache_data
 def parse_mapping_file(df_map):
@@ -225,7 +236,8 @@ if not (file_mapping and file_3g and file_4g):
     st.stop()
 
 try:
-    df_map_raw = load_excel_data(file_mapping)
+    # Dùng hàm load_excel_data_with_hash thay cho load_excel_data cũ
+    df_map_raw, _ = load_excel_data_with_hash(file_mapping)
     dict_station = parse_mapping_file(df_map_raw)
 except Exception as e:
     st.error(f"Lỗi đọc file Danh mục: {e}")
@@ -272,8 +284,8 @@ def prepare_net_df(file_data, kpi_rules):
     if not file_data:
         return None, {}, None, ""
     
-    # Sử dụng hàm load_net_data có gắn mốc thời gian file để cache thông minh
-    df, _ = load_net_data(file_data)
+    # Gọi hàm kèm theo mã hash nội dung file
+    df, _ = load_excel_data_with_hash(file_data)
     
     cell_col = None
     for c in df.columns:
