@@ -5,7 +5,6 @@ import os
 import hashlib
 from datetime import datetime
 
-
 st.set_page_config(page_title="Đánh giá KPI Trạm 3G/4G", layout="wide")
 
 # 1. NHÚNG CSS VÀ JS (CỐ ĐỊNH CỘT TRÁI TUYỆT ĐỐI TRÊN CẢ MOBILE VÀ PC)
@@ -140,7 +139,7 @@ KPI_THRESHOLDS_4G = {
     'INTERFREQUENCYHO': {'min': 95.0, 'label': 'INTER HO (%)<br><span class="kpi-target">≥ 95%</span>', 'kw': ['INTERFREQUENCYHO', 'INTERFREQ']},
     'HOSRIRATLTEWCDMA': {'min': 90.0, 'label': 'LTE-UMTS (%)<br><span class="kpi-target">≥ 90%</span>', 'kw': ['HOSRIRATLTEWCDMA', 'LTETOWCDMA', 'RATHOSR']},
     'CSFBSSR': {'min': 98.0, 'label': 'CSFB SR (%)<br><span class="kpi-target">≥ 98%</span>', 'kw': ['CSFBSSR', 'SETUPSUCCESSRATIO', 'CSFB']},
-    'ERABSSRATEALL': {'min': 98.5, 'label': 'E-RAB SR (%)<br><span class="kpi-target">≥ 98.5%</span>', 'kw': ['ERABSSRATEALL', 'ERAB']}, # Chỉ tiêu mới
+    'ERABSSRATEALL': {'min': 98.5, 'label': 'E-RAB SR (%)<br><span class="kpi-target">≥ 98.5%</span>', 'kw': ['ERABSSRATEALL', 'ERAB']},
 }
 
 KPI_THRESHOLDS_3G = {
@@ -183,18 +182,10 @@ def clean_numeric_series(series):
     s = series.astype(str).str.replace('%', '', regex=False).str.replace(',', '.', regex=False).str.strip()
     return pd.to_numeric(s, errors='coerce')
 
+# HÀM CACHE THÔNG MINH KÈM THEO MỐC THỜI GIAN SỬA ĐỔI FILE (MTIME)
 @st.cache_data
-def load_excel_data_with_hash(file_path):
-    # Đọc nội dung file thô để tính mã hash độc nhất cho nội dung file đó
-    if os.path.exists(file_path):
-        with open(file_path, "rb") as f:
-            file_bytes = f.read()
-            file_hash = hashlib.md5(file_bytes).hexdigest()
-    else:
-        file_hash = "no_file"
-    
-    # Trả về DataFrame cùng với mã hash để làm bộ nhớ đệm tự động
-    return pd.read_excel(file_path), file_hash
+def load_excel_data_with_mtime(file_path, file_mtime):
+    return pd.read_excel(file_path)
 
 @st.cache_data
 def parse_mapping_file(df_map):
@@ -236,8 +227,8 @@ if not (file_mapping and file_3g and file_4g):
     st.stop()
 
 try:
-    # Dùng hàm load_excel_data_with_hash thay cho load_excel_data cũ
-    df_map_raw, _ = load_excel_data_with_hash(file_mapping)
+    mtime_map = os.path.getmtime(file_mapping) if os.path.exists(file_mapping) else 0
+    df_map_raw = load_excel_data_with_mtime(file_mapping, mtime_map)
     dict_station = parse_mapping_file(df_map_raw)
 except Exception as e:
     st.error(f"Lỗi đọc file Danh mục: {e}")
@@ -272,20 +263,12 @@ def match_station_fn(cell_val):
             return st_code
     return None
 
-@st.cache_data
-def load_net_data(file_name):
-    if os.path.exists(file_name):
-        file_mtime = os.path.getmtime(file_name)
-    else:
-        file_mtime = 0
-    return pd.read_excel(file_name), file_mtime
-
 def prepare_net_df(file_data, kpi_rules):
     if not file_data:
         return None, {}, None, ""
     
-    # Gọi hàm kèm theo mã hash nội dung file
-    df, _ = load_excel_data_with_hash(file_data)
+    mtime = os.path.getmtime(file_data) if os.path.exists(file_data) else 0
+    df = load_excel_data_with_mtime(file_data, mtime)
     
     cell_col = None
     for c in df.columns:
@@ -513,4 +496,3 @@ with tab4g:
 
 with tab3g:
     render_cell_details(df_3g_prep, active_kpis_3g, cols_3g, "3G")
-# AUTO_REBOOT_TIME: 1791524073.3982413
