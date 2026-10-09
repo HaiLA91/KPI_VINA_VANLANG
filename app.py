@@ -183,6 +183,7 @@ def clean_numeric_series(series):
 
 @st.cache_data
 def load_excel_data(file):
+    st.cache_data.clear()
     return pd.read_excel(file)
 
 @st.cache_data
