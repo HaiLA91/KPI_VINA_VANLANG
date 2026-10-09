@@ -130,26 +130,26 @@ st.markdown("""
 "></svg>
 """, unsafe_allow_html=True)
 
-# ----------------- ĐỊNH NGHĨA CHỈ TIÊU KPI -----------------
+# ----------------- ĐỊNH NGHĨA CHỈ TIÊU KPI VỚI HỆ THỐNG TỪ KHÓA ĐA DẠNG -----------------
 KPI_THRESHOLDS_4G = {
-    'CSSR': {'min': 98.0, 'label': 'CSSR 4G (%)<br><span class="kpi-target">≥ 98%</span>'},
-    'SERVICEDROPALL': {'max': 1.5, 'label': 'DROP 4G (%)<br><span class="kpi-target">≤ 1.5%</span>'},
-    'INTRAFREQUENCYHO': {'min': 98.0, 'label': 'INTRA HO (%)<br><span class="kpi-target">≥ 98%</span>'},
-    'INTERFREQUENCYHO': {'min': 95.0, 'label': 'INTER HO (%)<br><span class="kpi-target">≥ 95%</span>'},
-    'HOSRIRATLTEWCDMA': {'min': 90.0, 'label': 'LTE-UMTS (%)<br><span class="kpi-target">≥ 90%</span>'},
-    'CSFBSSR': {'min': 98.0, 'label': 'CSFB SR (%)<br><span class="kpi-target">≥ 98%</span>'},
+    'CSSR': {'min': 98.0, 'label': 'CSSR 4G (%)<br><span class="kpi-target">≥ 98%</span>', 'kw': ['CSSR', 'CALLSETUPSUCCESS']},
+    'SERVICEDROPALL': {'max': 1.5, 'label': 'DROP 4G (%)<br><span class="kpi-target">≤ 1.5%</span>', 'kw': ['SERVICEDROPALL', 'SERVICEDROP', 'DROP']},
+    'INTRAFREQUENCYHO': {'min': 98.0, 'label': 'INTRA HO (%)<br><span class="kpi-target">≥ 98%</span>', 'kw': ['INTRAFREQUENCYHO', 'INTRAFREQ']},
+    'INTERFREQUENCYHO': {'min': 95.0, 'label': 'INTER HO (%)<br><span class="kpi-target">≥ 95%</span>', 'kw': ['INTERFREQUENCYHO', 'INTERFREQ']},
+    'HOSRIRATLTEWCDMA': {'min': 90.0, 'label': 'LTE-UMTS (%)<br><span class="kpi-target">≥ 90%</span>', 'kw': ['HOSRIRATLTEWCDMA', 'LTETOWCDMA', 'RATHOSR']},
+    'CSFBSSR': {'min': 98.0, 'label': 'CSFB SR (%)<br><span class="kpi-target">≥ 98%</span>', 'kw': ['CSFBSSR', 'SETUPSUCCESSRATIO', 'CSFB']},
 }
 
 KPI_THRESHOLDS_3G = {
-    'CSVOICECSS': {'min': 99.0, 'label': 'CSSR Voice (%)<br><span class="kpi-target">≥ 99%</span>'},
-    'DCR': {'max': 1.0, 'label': 'Drop Voice (%)<br><span class="kpi-target">≤ 1%</span>'},
-    'SOFTHOSR': {'min': 99.0, 'label': 'S.HOSR (%)<br><span class="kpi-target">≥ 99%</span>'},
-    'SINTERFREQH': {'min': 95.0, 'label': 'IF HOSR (%)<br><span class="kpi-target">≥ 95%</span>'},
-    'IRATHOSR': {'min': 95.0, 'label': 'IRAT HOSR (%)<br><span class="kpi-target">≥ 95%</span>'},
-    'PSCSSR': {'min': 98.0, 'label': 'ASR PS (%)<br><span class="kpi-target">≥ 98%</span>'},
-    'PSDCR': {'max': 1.0, 'label': 'DR PS (%)<br><span class="kpi-target">≤ 1%</span>'},
-    'SOFTHOSRPS': {'min': 99.0, 'label': 'PS Soft HO (%)<br><span class="kpi-target">≥ 99%</span>'},
-    'V2INTERFREQ': {'min': 93.0, 'label': 'PS Inter-Freq (%)<br><span class="kpi-target">≥ 93%</span>'},
+    'CSVOICECSS': {'min': 99.0, 'label': 'CSSR Voice (%)<br><span class="kpi-target">≥ 99%</span>', 'kw': ['CSVOICECSS', 'CSSRVOICE']},
+    'DCR': {'max': 1.0, 'label': 'Drop Voice (%)<br><span class="kpi-target">≤ 1%</span>', 'kw': ['DCR', 'DROPVOICE']},
+    'SOFTHOSR': {'min': 99.0, 'label': 'S.HOSR (%)<br><span class="kpi-target">≥ 99%</span>', 'kw': ['SOFTHOSR']},
+    'SINTERFREQH': {'min': 95.0, 'label': 'IF HOSR (%)<br><span class="kpi-target">≥ 95%</span>', 'kw': ['SINTERFREQH', 'IFHOSR']},
+    'IRATHOSR': {'min': 95.0, 'label': 'IRAT HOSR (%)<br><span class="kpi-target">≥ 95%</span>', 'kw': ['IRATHOSR']},
+    'PSCSSR': {'min': 98.0, 'label': 'ASR PS (%)<br><span class="kpi-target">≥ 98%</span>', 'kw': ['PSCSSR', 'ASRPS']},
+    'PSDCR': {'max': 1.0, 'label': 'DR PS (%)<br><span class="kpi-target">≤ 1%</span>', 'kw': ['PSDCR', 'DRPS']},
+    'SOFTHOSRPS': {'min': 99.0, 'label': 'PS Soft HO (%)<br><span class="kpi-target">≥ 99%</span>', 'kw': ['SOFTHOSRPS', 'PSSOFTHO']},
+    'V2INTERFREQ': {'min': 93.0, 'label': 'PS Inter-Freq (%)<br><span class="kpi-target">≥ 93%</span>', 'kw': ['V2INTERFREQ', 'PSINTERFREQ']},
 }
 
 def clean_col_name(c):
@@ -288,9 +288,10 @@ def prepare_net_df(file_data, kpi_rules):
     df = df.dropna(subset=['MATCHED_ST'])
 
     active_kpis = {}
-    for k_clean, rule in kpi_rules.items():
+    for kpi_id, rule in kpi_rules.items():
         for c in df.columns:
-            if k_clean in clean_col_name(c):
+            c_clean_name = clean_col_name(c)
+            if any(kw in c_clean_name for kw in rule['kw']):
                 active_kpis[c] = rule
                 df[c] = clean_numeric_series(df[c])
                 break
