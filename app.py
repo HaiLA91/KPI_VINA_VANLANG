@@ -285,9 +285,9 @@ for st_code in all_stations_ui:
     station_results_by_name[st_name] = kq_type
 
 
-st.title(f"📊 Kiểm Tra & Đánh Giá KPI VINAPHONE Tuần ({display_time})")
-
-# ----------------- BẢNG LỊCH SỬ ĐÁNH GIÁ CẬP NHẬT TỰ ĐỘNG -----------------
+# =====================================================================================
+# CHUYỂN BẢNG LỊCH SỬ LÊN TRÊN CÙNG
+# =====================================================================================
 if not df_history_raw.empty:
     with st.expander("📊 LỊCH SỬ ĐÁNH GIÁ CÁC TUẦN TRƯỚC (Từ file Tổng Hợp)", expanded=False):
         ten_tram_col = next((c for c in df_history_raw.columns if 'TÊN' in str(c).upper()), None)
@@ -395,6 +395,12 @@ if not df_history_raw.empty:
 
 elif file_tonghop is None:
     st.info("💡 Không tìm thấy file 'Tonghop.xlsx' trong thư mục để hiển thị lịch sử.")
+
+
+# =====================================================================================
+# TIÊU ĐỀ CHÍNH VÀ CÁC BẢNG BÊN DƯỚI
+# =====================================================================================
+st.title(f"📊 Kiểm Tra & Đánh Giá KPI VINAPHONE Tuần ({display_time})")
 
 # ----------------- BẢNG TRUNG BÌNH GỘP CÓ FILTER KHU VỰC -----------------
 with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM (GỘP CHUNG 3G & 4G)", expanded=True):
