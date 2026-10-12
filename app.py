@@ -403,7 +403,7 @@ elif file_tonghop is None:
 st.title(f"📊 Kiểm Tra & Đánh Giá KPI VINAPHONE Tuần ({display_time})")
 
 # ----------------- BẢNG TRUNG BÌNH GỘP CÓ FILTER KHU VỰC -----------------
-with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM (GỘP CHUNG 3G & 4G)", expanded=True):
+with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM (GỘP CHUNG 3G & 4G)", expanded=False):
     col_filter1, col_filter2, col_filter3 = st.columns([1, 1, 1.5])
     
     with col_filter1:
