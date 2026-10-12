@@ -3,10 +3,11 @@ import pandas as pd
 import re
 import os
 from datetime import datetime
+from io import BytesIO
 
 st.set_page_config(page_title="Đánh giá KPI Trạm 3G/4G", layout="wide")
 
-# 1. NHÚNG CSS VÀ JS (ĐIỀU CHỈNH LẠI CÁC CỘT CỐ ĐỊNH TRÁI)
+# 1. NHÚNG CSS VÀ JS
 st.markdown("""
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
@@ -43,20 +44,17 @@ st.markdown("""
     .th-group-4g { background-color: #0288d1 !important; color: #ffffff !important; text-align: center !important; border-right: 3px solid #ffeb3b !important; font-size: 14px !important; }
     .th-group-3g { background-color: #e65100 !important; color: #ffffff !important; text-align: center !important; font-size: 14px !important; }
 
-    /* CỘT CỐ ĐỊNH CHO BẢNG TRUNG BÌNH */
     .f-col1 { position: sticky !important; left: 0 !important; min-width: 120px; max-width: 120px; white-space: normal !important; word-wrap: break-word; z-index: 3; }
     .f-col2 { position: sticky !important; left: 120px !important; min-width: 160px; max-width: 160px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 3; }
     th.f-col1, th.f-col2 { z-index: 6 !important; background-color: #1e293b !important; } 
     td.f-col1, td.f-col2 { background-color: #1e1e1e !important; color: #eee !important; }
 
-    /* CỘT CỐ ĐỊNH CHO BẢNG CHI TIẾT 4G */
     .f-id1 { position: sticky !important; left: 0 !important; min-width: 90px; max-width: 90px; white-space: normal !important; word-wrap: break-word; z-index: 3; }
     .f-id2 { position: sticky !important; left: 90px !important; min-width: 80px; max-width: 80px; white-space: normal !important; word-wrap: break-word; z-index: 3; }
     .f-cell-4g { position: sticky !important; left: 170px !important; min-width: 180px; max-width: 180px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 3; }
     th.f-id1, th.f-id2, th.f-cell-4g { z-index: 6 !important; background-color: #1e293b !important; } 
     td.f-id1, td.f-id2, td.f-cell-4g { background-color: #1e1e1e !important; color: #eee !important; }
 
-    /* CỘT CỐ ĐỊNH CHO BẢNG CHI TIẾT 3G */
     .f-ci { position: sticky !important; left: 0 !important; min-width: 80px; max-width: 80px; white-space: normal !important; word-wrap: break-word; z-index: 3; }
     .f-cell-3g { position: sticky !important; left: 80px !important; min-width: 200px; max-width: 200px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 3; }
     th.f-ci, th.f-cell-3g { z-index: 6 !important; background-color: #1e293b !important; } 
@@ -158,7 +156,7 @@ def tim_file_excel(tu_khoa):
 file_3g = tim_file_excel("3G")
 file_4g = tim_file_excel("4G")
 file_mapping = tim_file_excel("TRAM") or tim_file_excel("MÃ") or tim_file_excel("MA")
-file_tonghop = tim_file_excel("TONGHOP") # Tìm file tổng hợp
+file_tonghop = tim_file_excel("TONGHOP")
 
 if not (file_mapping and file_3g and file_4g):
     st.title("📊 Kiểm Tra & Đánh Giá KPI VINAPHONE Tuần")
@@ -168,11 +166,9 @@ if not (file_mapping and file_3g and file_4g):
 # ----------------- ĐỌC DỮ LIỆU TỪ EXCEL -----------------
 try:
     mtime_map = os.path.getmtime(file_mapping) if os.path.exists(file_mapping) else 0
-    # Đọc Sheet danh sách trạm (Index = 0)
     df_map_raw = load_excel_data_with_mtime(file_mapping, mtime_map, header_keywords=['MÃTR', 'MATR', 'MÃ', 'STT'], sheet_name=0)
     dict_station, dict_region = parse_mapping_file(df_map_raw)
     
-    # Đọc file Tổng hợp lịch sử
     df_history_raw = pd.DataFrame()
     if file_tonghop:
         mtime_th = os.path.getmtime(file_tonghop) if os.path.exists(file_tonghop) else 0
@@ -256,21 +252,98 @@ df_3g_prep, active_kpis_3g, cols_3g, time_3g_sample = prepare_net_df(file_3g, KP
 display_time = time_4g_sample or time_3g_sample
 if not display_time: display_time = datetime.now().strftime("%d/%m/%Y")
 
+# ----------------- TÍNH TOÁN TRUNG BÌNH & KẾT QUẢ TỔNG (TRƯỚC KHI HIỂN THỊ) -----------------
+mean_4g = df_4g_prep.groupby('MATCHED_ST')[list(active_kpis_4g.keys())].mean() if df_4g_prep is not None and not df_4g_prep.empty else pd.DataFrame()
+mean_3g = df_3g_prep.groupby('MATCHED_ST')[list(active_kpis_3g.keys())].mean() if df_3g_prep is not None and not df_3g_prep.empty else pd.DataFrame()
+
+# Khởi tạo Dictionary để lưu kết quả tổng của từng Trạm (dựa theo Tên Trạm)
+station_results_by_name = {}
+
+for st_code in all_stations_ui:
+    has_any_data = False
+    station_failed = False
+    st_name = str(dict_station.get(st_code, '')).strip().upper()
+    
+    for c, rule in active_kpis_4g.items():
+        val = mean_4g.loc[st_code, c] if (not mean_4g.empty and st_code in mean_4g.index and c in mean_4g.columns) else None
+        is_ok, _ = evaluate_val(val, rule)
+        if is_ok is not None:
+            has_any_data = True
+            if not is_ok: station_failed = True
+
+    for c, rule in active_kpis_3g.items():
+        val = mean_3g.loc[st_code, c] if (not mean_3g.empty and st_code in mean_3g.index and c in mean_3g.columns) else None
+        is_ok, _ = evaluate_val(val, rule)
+        if is_ok is not None:
+            has_any_data = True
+            if not is_ok: station_failed = True
+
+    if not has_any_data: kq_type = "NODATA"
+    elif station_failed: kq_type = "Fail"
+    else: kq_type = "Pass"
+    
+    station_results_by_name[st_name] = kq_type
+
+
 st.title(f"📊 Kiểm Tra & Đánh Giá KPI VINAPHONE Tuần ({display_time})")
 
-# ----------------- BẢNG LỊCH SỬ ĐÁNH GIÁ (TỪ FILE TONGHOP) Ở TRÊN CÙNG -----------------
+# ----------------- BẢNG LỊCH SỬ ĐÁNH GIÁ CẬP NHẬT TỰ ĐỘNG -----------------
 if not df_history_raw.empty:
     with st.expander("📊 LỊCH SỬ ĐÁNH GIÁ CÁC TUẦN TRƯỚC (Từ file Tổng Hợp)", expanded=False):
-        # Lấy các cột tuần (loại bỏ các cột STT, Tên trạm, Khu vực)
         ten_tram_col = next((c for c in df_history_raw.columns if 'TÊN' in str(c).upper()), None)
         khu_vuc_col = next((c for c in df_history_raw.columns if 'KHU' in str(c).upper()), None)
         
         if ten_tram_col:
-            # Xóa các dòng rỗng tên trạm
             df_hist = df_history_raw.dropna(subset=[ten_tram_col]).copy()
-            # Tìm các cột có chứa chữ "Tuần"
             week_cols = [c for c in df_hist.columns if 'TUẦN' in str(c).upper()]
             
+            # --- TÌM TUẦN TRỐNG ĐẦU TIÊN VÀ KIỂM TRA TRÙNG LẶP ---
+            last_filled_week = None
+            first_empty_week = None
+            
+            # Duyệt các cột tuần để xác định tuần cuối có dữ liệu và tuần trống đầu tiên
+            for wc in week_cols:
+                col_vals = df_hist[wc].astype(str).str.strip().str.upper()
+                if col_vals.isin(['PASS', 'FAIL']).any():
+                    last_filled_week = wc
+                else:
+                    first_empty_week = wc
+                    break
+            
+            # Kiểm tra xem kết quả hiện tại có giống hệt tuần trước không (chống trùng lặp)
+            is_duplicate = False
+            if last_filled_week and first_empty_week:
+                differences = 0
+                valid_comparisons = 0
+                for idx, row in df_hist.iterrows():
+                    tram_name = str(row[ten_tram_col]).strip().upper()
+                    if tram_name in station_results_by_name and station_results_by_name[tram_name] != "NODATA":
+                        current_val = station_results_by_name[tram_name].upper()
+                        prev_val = str(row[last_filled_week]).strip().upper()
+                        
+                        # Chỉ so sánh nếu tuần trước có kết quả PASS/FAIL
+                        if prev_val in ['PASS', 'FAIL']:
+                            valid_comparisons += 1
+                            if current_val != prev_val:
+                                differences += 1
+                
+                # Nếu có so sánh và không có bất kỳ sự sai lệch nào -> Dữ liệu giống hệt 100%
+                if valid_comparisons > 0 and differences == 0:
+                    is_duplicate = True
+
+            tuan_can_dien = None
+            if is_duplicate:
+                st.info(f"💡 Dữ liệu tính toán hoàn toàn giống với **{last_filled_week}**. Hệ thống tự động bỏ qua ghi đè để tránh lưu trùng lặp (có thể bạn đã load file đánh giá này rồi).")
+            elif first_empty_week:
+                tuan_can_dien = first_empty_week
+                for idx, row in df_hist.iterrows():
+                    tram_name = str(row[ten_tram_col]).strip().upper()
+                    if tram_name in station_results_by_name and station_results_by_name[tram_name] != "NODATA":
+                        df_hist.at[idx, tuan_can_dien] = station_results_by_name[tram_name]
+            else:
+                st.warning("⚠️ File Tổng hợp đã được điền kín các tuần. Không còn cột trống để ánh xạ!")
+            # --------------------------------------------------------
+
             hist_header_html = f"""
             <div class='table-responsive-wrapper'>
             <table class='table-custom detail-table'>
@@ -280,7 +353,10 @@ if not df_history_raw.empty:
                     <th>KHU VỰC</th>
             """
             for wc in week_cols:
-                hist_header_html += f"<th style='text-align:center;'>{wc}</th>"
+                if wc == tuan_can_dien: 
+                    hist_header_html += f"<th style='text-align:center; color:#ffeb3b;'>{wc} (Mới cập nhật)</th>"
+                else: 
+                    hist_header_html += f"<th style='text-align:center;'>{wc}</th>"
             hist_header_html += "</tr></thead><tbody>"
             
             hist_rows_html = []
@@ -303,6 +379,20 @@ if not df_history_raw.empty:
                 
             full_hist_html = hist_header_html + "".join(hist_rows_html) + "</tbody></table></div>"
             st.markdown(full_hist_html, unsafe_allow_html=True)
+
+            # Chỉ hiển thị nút tải xuống khi có chèn dữ liệu mới vào file
+            if tuan_can_dien:
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                    df_hist.to_excel(writer, index=False, sheet_name='TongHop')
+                excel_data = output.getvalue()
+                st.download_button(
+                    label=f"📥 Tải xuống file Tổng Hợp đã tự động điền {tuan_can_dien}", 
+                    data=excel_data, 
+                    file_name="Tonghop_DaCapNhat.xlsx", 
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
 elif file_tonghop is None:
     st.info("💡 Không tìm thấy file 'Tonghop.xlsx' trong thư mục để hiển thị lịch sử.")
 
@@ -320,9 +410,6 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
         
     with col_filter3:
         search_avg_stations = st.multiselect("🔍 Lọc nhanh theo Mã Trạm:", options=all_stations_ui, format_func=lambda x: f"{x} - {dict_station[x]}")
-    
-    mean_4g = df_4g_prep.groupby('MATCHED_ST')[list(active_kpis_4g.keys())].mean() if df_4g_prep is not None and not df_4g_prep.empty else pd.DataFrame()
-    mean_3g = df_3g_prep.groupby('MATCHED_ST')[list(active_kpis_3g.keys())].mean() if df_3g_prep is not None and not df_3g_prep.empty else pd.DataFrame()
 
     len_4g = len(active_kpis_4g)
     len_3g = len(active_kpis_3g)
@@ -421,7 +508,6 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
         
         kpi_headers_html = "".join([f"<th style='text-align:right;'>{rule['label']}</th>" for rule in active_kpis.values()])
         
-        # Tùy biến Header cho 3G/4G
         if net_label == '4G': th_id = "<th class='f-id1'>ENODEB ID</th><th class='f-id2'>CELL ID</th><th class='f-cell-4g'>CELL</th>"
         else: th_id = "<th class='f-ci'>CI</th><th class='f-cell-3g'>CELL</th>"
         
@@ -437,7 +523,6 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
         </tr></thead><tbody>
         """)
 
-        # TÍNH TRUNG BÌNH TOÀN TRẠM
         avg_cols_html = ""
         avg_is_pass = True
         for col_name, rule in active_kpis.items():
@@ -456,7 +541,6 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
         else:
             html_blocks.append(f"<tr style='background-color: #1a1a1a;'><td class='f-ci' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffffff;'><b>TRUNG BÌNH TRẠM</b></span></td><td class='f-cell-3g' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffffff;'>↳ Toàn Trạm</span></td><td style='text-align:center; border-bottom: 2px solid #444;'>{avg_badge}</td>{avg_cols_html}</tr>")
 
-        # HIỂN THỊ TỪNG DÒNG (CELL)
         col_enodeb = extra_cols.get('ENODEB')
         col_cellid = extra_cols.get('CELLID')
         col_ci = extra_cols.get('CI')
@@ -475,7 +559,6 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
 
             status_badge = "<span class='badge-pass'>ĐẠT</span>" if row_is_pass else "<span class='badge-fail'>FAIL</span>"
             
-            # Xử lý các cột ID 4G/3G
             if net_label == '4G':
                 val_en = str(row[col_enodeb]).replace('.0', '') if col_enodeb and not pd.isna(row[col_enodeb]) else "-"
                 val_cid = str(row[col_cellid]).replace('.0', '') if col_cellid and not pd.isna(row[col_cellid]) else "-"
