@@ -110,15 +110,13 @@ def clean_numeric_series(series):
     s = series.astype(str).str.replace('%', '', regex=False).str.replace(',', '.', regex=False).str.strip()
     return pd.to_numeric(s, errors='coerce')
 
-# --- VÁ LỖI TẠI ĐÂY: HÀM QUÉT DÒNG TÌM HEADER CHUẨN ---
 @st.cache_data
-def load_excel_data_with_mtime(file_path, file_mtime, header_keywords=None): 
-    df = pd.read_excel(file_path)
+def load_excel_data_with_mtime(file_path, file_mtime, header_keywords=None, sheet_name=0): 
+    # Mặc định đọc sheet đầu tiên (index 0) nếu không truyền vào sheet_name
+    df = pd.read_excel(file_path, sheet_name=sheet_name)
     if header_keywords:
-        # Kiểm tra xem header hiện tại đã chuẩn chưa
         cols_str = [str(c).upper().replace(' ', '') for c in df.columns]
         if not any(any(kw in c for kw in header_keywords) for c in cols_str):
-            # Nếu chưa, tìm trong 15 dòng đầu tiên
             for i in range(min(15, len(df))):
                 row_vals = [str(x).upper().replace(' ', '') for x in df.iloc[i].values]
                 if any(any(kw in v for kw in header_keywords) for v in row_vals):
@@ -126,11 +124,9 @@ def load_excel_data_with_mtime(file_path, file_mtime, header_keywords=None):
                     df = df.iloc[i+1:].reset_index(drop=True)
                     break
     return df
-# --------------------------------------------------------
 
 @st.cache_data
 def parse_mapping_file(df_map):
-    # Ffill để xử lý các ô merge (ví dụ ô Khu vực HCM bị merge qua nhiều dòng)
     df_map = df_map.ffill()
     mapping = {}
     region_mapping = {}
@@ -138,7 +134,6 @@ def parse_mapping_file(df_map):
     ma_cols = [c for c in df_map.columns if 'MÃ' in str(c).upper() or 'MA TR' in str(c).upper() or 'MÃ TR' in str(c).upper()]
     ten_cols = [c for c in df_map.columns if 'TÊN' in str(c).upper() or 'TEN TR' in str(c).upper() or 'TÊN TR' in str(c).upper()]
     
-    # Tìm cột khu vực (Thường chứa chữ HCM, VTU, BDG)
     r_col = None
     for c in df_map.columns:
         if df_map[c].astype(str).str.upper().isin(['HCM', 'VTU', 'BDG']).any():
@@ -170,11 +165,19 @@ if not (file_mapping and file_3g and file_4g):
     st.error("⚠️ Chưa tìm đủ file '3G', '4G', 'TRAM'.")
     st.stop()
 
+# ----------------- ĐỌC DỮ LIỆU TỪ EXCEL -----------------
 try:
     mtime_map = os.path.getmtime(file_mapping) if os.path.exists(file_mapping) else 0
-    # Thêm tham số header_keywords để sửa lỗi đọc file danh mục bị trật dòng
-    df_map_raw = load_excel_data_with_mtime(file_mapping, mtime_map, header_keywords=['MÃTR', 'MATR', 'MÃ'])
+    # Đọc Sheet 1 (Index = 0) để lấy danh sách trạm
+    df_map_raw = load_excel_data_with_mtime(file_mapping, mtime_map, header_keywords=['MÃTR', 'MATR', 'MÃ', 'STT'], sheet_name=0)
     dict_station, dict_region = parse_mapping_file(df_map_raw)
+    
+    # Đọc Sheet 2 (Index = 1) để lấy lịch sử đánh giá
+    try:
+        df_history_raw = load_excel_data_with_mtime(file_mapping, mtime_map, header_keywords=['TÊNTRẠM', 'TÊN TRẠM', 'STT'], sheet_name=1)
+    except:
+        df_history_raw = pd.DataFrame()
+        
 except Exception as e:
     st.error(f"Lỗi đọc file Danh mục: {e}")
     st.stop()
@@ -206,15 +209,13 @@ def prepare_net_df(file_data, kpi_rules, net_type):
     if not file_data: return None, {}, None, ""
     
     mtime = os.path.getmtime(file_data) if os.path.exists(file_data) else 0
-    # Thêm tham số header_keywords để sửa lỗi file 3G/4G
-    df = load_excel_data_with_mtime(file_data, mtime, header_keywords=['CELL', 'ENODEB', 'CI'])
+    df = load_excel_data_with_mtime(file_data, mtime, header_keywords=['CELL', 'ENODEB', 'CI'], sheet_name=0)
     
     cell_col = next((c for c in df.columns if 'CELL NAME' in str(c).upper() or 'TÊN CELL' in str(c).upper() or str(c).upper() == 'CELL'), None)
     if not cell_col: cell_col = next((c for c in df.columns if 'CELL' in str(c).upper()), None)
     
     time_col = next((c for c in df.columns if 'THỜI' in str(c).upper() or 'TIME' in str(c).upper()), None)
     
-    # Tìm các cột ENodeB ID, Cell ID (4G) hoặc CI (3G)
     extra_cols = {}
     if net_type == '4G':
         for c in df.columns:
@@ -254,7 +255,7 @@ if not display_time: display_time = datetime.now().strftime("%d/%m/%Y")
 
 st.title(f"📊 Kiểm Tra & Đánh Giá KPI VINAPHONE Tuần ({display_time})")
 
-# ----------------- 2. BẢNG TRUNG BÌNH GỘP CÓ FILTER KHU VỰC -----------------
+# ----------------- BẢNG TRUNG BÌNH GỘP CÓ FILTER KHU VỰC -----------------
 with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM (GỘP CHUNG 3G & 4G)", expanded=True):
     col_filter1, col_filter2, col_filter3 = st.columns([1, 1, 1.5])
     
@@ -262,7 +263,6 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
         filter_choice = st.radio("Bộ lọc kết quả:", ["Tất cả", "Chỉ các trạm ĐẠT", "Các trạm KHÔNG ĐẠT"], horizontal=True)
         
     with col_filter2:
-        # Filter Khu vực
         avail_regions = sorted(list(set(r for r in dict_region.values() if r and r.upper() != 'NAN')))
         if not avail_regions: avail_regions = ["HCM", "VTU", "BDG"]
         region_choice = st.radio("Lọc Khu vực:", ["Tất cả"] + avail_regions, horizontal=True)
@@ -295,11 +295,9 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
 
     rows_merged_html = []
     for st_code in all_stations_ui:
-        # Áp dụng logic Lọc Khu Vực
         st_region = dict_region.get(st_code, "")
         if grouped_cr_key and st_code == grouped_cr_key: st_region = dict_region.get(bv_cr_codes[0], "")
         if region_choice != "Tất cả" and st_region != region_choice: continue
-
         if search_avg_stations and st_code not in search_avg_stations: continue
             
         st_name = dict_station.get(st_code, '')
@@ -331,7 +329,7 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
 
         if not has_any_data: badge, kq_type = "<span class='badge-nodata'>Chưa có dữ liệu</span>", "NODATA"
         elif station_failed: badge, kq_type = "<span class='badge-fail'>FAIL</span>", "FAIL"
-        else: badge, kq_type = "<span class='badge-pass'>Pass</span>", "PASS"
+        else: badge, kq_type = "<span class='badge-pass'>ĐẠT</span>", "PASS"
 
         if filter_choice == "Chỉ các trạm ĐẠT" and kq_type != "PASS": continue
         if filter_choice == "Các trạm KHÔNG ĐẠT" and kq_type != "FAIL": continue
@@ -341,7 +339,53 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
     full_table_html = table_header_html + "".join(rows_merged_html) + "</tbody></table></div>"
     st.markdown(full_table_html, unsafe_allow_html=True)
 
-# ----------------- 3. BỘ LỌC CHỌN TRẠM CỤ THỂ BẢNG CELL -----------------
+# ----------------- BẢNG LỊCH SỬ ĐÁNH GIÁ (SHEET 2) -----------------
+if not df_history_raw.empty:
+    with st.expander("📊 LỊCH SỬ ĐÁNH GIÁ CÁC TUẦN TRƯỚC (Từ Sheet2)", expanded=False):
+        # Lấy các cột tuần (loại bỏ các cột STT, Tên trạm, Khu vực)
+        ten_tram_col = next((c for c in df_history_raw.columns if 'TÊN' in str(c).upper()), None)
+        khu_vuc_col = next((c for c in df_history_raw.columns if 'KHU' in str(c).upper()), None)
+        
+        if ten_tram_col:
+            # Xóa các dòng rỗng tên trạm
+            df_hist = df_history_raw.dropna(subset=[ten_tram_col]).copy()
+            week_cols = [c for c in df_hist.columns if str(c).isdigit() or 'TUẦN' in str(c).upper()]
+            
+            hist_header_html = f"""
+            <div class='table-responsive-wrapper'>
+            <table class='table-custom detail-table'>
+            <thead>
+                <tr>
+                    <th class='f-col2' style='min-width:250px; max-width:250px;'>TÊN TRẠM</th>
+                    <th>KHU VỰC</th>
+            """
+            for wc in week_cols:
+                hist_header_html += f"<th style='text-align:center;'>Tuần {wc}</th>"
+            hist_header_html += "</tr></thead><tbody>"
+            
+            hist_rows_html = []
+            for _, row in df_hist.iterrows():
+                tram_name = str(row[ten_tram_col]).strip()
+                khu_vuc = str(row[khu_vuc_col]).strip() if khu_vuc_col else ""
+                
+                td_html = ""
+                for wc in week_cols:
+                    val = str(row[wc]).strip().upper()
+                    if val == 'PASS':
+                        td_html += "<td style='text-align:center;'><span class='badge-pass'>PASS</span></td>"
+                    elif val == 'FAIL':
+                        td_html += "<td style='text-align:center;'><span class='badge-fail'>FAIL</span></td>"
+                    else:
+                        display_val = row[wc] if pd.notna(row[wc]) else '-'
+                        td_html += f"<td style='text-align:center; color:#9e9e9e;'>{display_val}</td>"
+                
+                hist_rows_html.append(f"<tr><td class='f-col2'><b>{tram_name}</b></td><td>{khu_vuc}</td>{td_html}</tr>")
+                
+            full_hist_html = hist_header_html + "".join(hist_rows_html) + "</tbody></table></div>"
+            st.markdown(full_hist_html, unsafe_allow_html=True)
+
+
+# ----------------- BỘ LỌC CHỌN TRẠM CỤ THỂ BẢNG CELL -----------------
 selected_stations = st.multiselect(
     "🔍 Chọn Mã Trạm cần xem chi tiết Cell:",
     options=all_stations_ui,
@@ -446,4 +490,3 @@ with tab4g:
 
 with tab3g:
     render_cell_details(df_3g_prep, active_kpis_3g, cols_3g, "3G")
-# AUTO_REBOOT_TIME: 1791812154.266288
