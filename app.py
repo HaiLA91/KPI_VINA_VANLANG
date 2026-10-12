@@ -110,8 +110,23 @@ def clean_numeric_series(series):
     s = series.astype(str).str.replace('%', '', regex=False).str.replace(',', '.', regex=False).str.strip()
     return pd.to_numeric(s, errors='coerce')
 
+# --- VÁ LỖI TẠI ĐÂY: HÀM QUÉT DÒNG TÌM HEADER CHUẨN ---
 @st.cache_data
-def load_excel_data_with_mtime(file_path, file_mtime): return pd.read_excel(file_path)
+def load_excel_data_with_mtime(file_path, file_mtime, header_keywords=None): 
+    df = pd.read_excel(file_path)
+    if header_keywords:
+        # Kiểm tra xem header hiện tại đã chuẩn chưa
+        cols_str = [str(c).upper().replace(' ', '') for c in df.columns]
+        if not any(any(kw in c for kw in header_keywords) for c in cols_str):
+            # Nếu chưa, tìm trong 15 dòng đầu tiên
+            for i in range(min(15, len(df))):
+                row_vals = [str(x).upper().replace(' ', '') for x in df.iloc[i].values]
+                if any(any(kw in v for kw in header_keywords) for v in row_vals):
+                    df.columns = df.iloc[i]
+                    df = df.iloc[i+1:].reset_index(drop=True)
+                    break
+    return df
+# --------------------------------------------------------
 
 @st.cache_data
 def parse_mapping_file(df_map):
@@ -157,7 +172,8 @@ if not (file_mapping and file_3g and file_4g):
 
 try:
     mtime_map = os.path.getmtime(file_mapping) if os.path.exists(file_mapping) else 0
-    df_map_raw = load_excel_data_with_mtime(file_mapping, mtime_map)
+    # Thêm tham số header_keywords để sửa lỗi đọc file danh mục bị trật dòng
+    df_map_raw = load_excel_data_with_mtime(file_mapping, mtime_map, header_keywords=['MÃTR', 'MATR', 'MÃ'])
     dict_station, dict_region = parse_mapping_file(df_map_raw)
 except Exception as e:
     st.error(f"Lỗi đọc file Danh mục: {e}")
@@ -190,7 +206,8 @@ def prepare_net_df(file_data, kpi_rules, net_type):
     if not file_data: return None, {}, None, ""
     
     mtime = os.path.getmtime(file_data) if os.path.exists(file_data) else 0
-    df = load_excel_data_with_mtime(file_data, mtime)
+    # Thêm tham số header_keywords để sửa lỗi file 3G/4G
+    df = load_excel_data_with_mtime(file_data, mtime, header_keywords=['CELL', 'ENODEB', 'CI'])
     
     cell_col = next((c for c in df.columns if 'CELL NAME' in str(c).upper() or 'TÊN CELL' in str(c).upper() or str(c).upper() == 'CELL'), None)
     if not cell_col: cell_col = next((c for c in df.columns if 'CELL' in str(c).upper()), None)
@@ -429,4 +446,3 @@ with tab4g:
 
 with tab3g:
     render_cell_details(df_3g_prep, active_kpis_3g, cols_3g, "3G")
-# AUTO_REBOOT_TIME: 1791811182.4730518
