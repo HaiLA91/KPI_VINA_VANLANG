@@ -112,7 +112,6 @@ def clean_numeric_series(series):
 
 @st.cache_data
 def load_excel_data_with_mtime(file_path, file_mtime, header_keywords=None, sheet_name=0): 
-    # Mặc định đọc sheet đầu tiên (index 0) nếu không truyền vào sheet_name
     df = pd.read_excel(file_path, sheet_name=sheet_name)
     if header_keywords:
         cols_str = [str(c).upper().replace(' ', '') for c in df.columns]
@@ -159,6 +158,7 @@ def tim_file_excel(tu_khoa):
 file_3g = tim_file_excel("3G")
 file_4g = tim_file_excel("4G")
 file_mapping = tim_file_excel("TRAM") or tim_file_excel("MÃ") or tim_file_excel("MA")
+file_tonghop = tim_file_excel("TONGHOP") # Tìm file tổng hợp
 
 if not (file_mapping and file_3g and file_4g):
     st.title("📊 Kiểm Tra & Đánh Giá KPI VINAPHONE Tuần")
@@ -168,16 +168,19 @@ if not (file_mapping and file_3g and file_4g):
 # ----------------- ĐỌC DỮ LIỆU TỪ EXCEL -----------------
 try:
     mtime_map = os.path.getmtime(file_mapping) if os.path.exists(file_mapping) else 0
-    # Đọc Sheet 1 (Index = 0) để lấy danh sách trạm
+    # Đọc Sheet danh sách trạm (Index = 0)
     df_map_raw = load_excel_data_with_mtime(file_mapping, mtime_map, header_keywords=['MÃTR', 'MATR', 'MÃ', 'STT'], sheet_name=0)
     dict_station, dict_region = parse_mapping_file(df_map_raw)
     
-    # Đọc Sheet 2 (Index = 1) để lấy lịch sử đánh giá
-    try:
-        df_history_raw = load_excel_data_with_mtime(file_mapping, mtime_map, header_keywords=['TÊNTRẠM', 'TÊN TRẠM', 'STT'], sheet_name=1)
-    except:
-        df_history_raw = pd.DataFrame()
-        
+    # Đọc file Tổng hợp lịch sử
+    df_history_raw = pd.DataFrame()
+    if file_tonghop:
+        mtime_th = os.path.getmtime(file_tonghop) if os.path.exists(file_tonghop) else 0
+        try:
+            df_history_raw = load_excel_data_with_mtime(file_tonghop, mtime_th, header_keywords=['TÊNTRẠM', 'TÊN TRẠM', 'STT'], sheet_name=0)
+        except Exception as e:
+            st.warning(f"Lỗi đọc file Tổng hợp: {e}")
+            
 except Exception as e:
     st.error(f"Lỗi đọc file Danh mục: {e}")
     st.stop()
@@ -254,6 +257,54 @@ display_time = time_4g_sample or time_3g_sample
 if not display_time: display_time = datetime.now().strftime("%d/%m/%Y")
 
 st.title(f"📊 Kiểm Tra & Đánh Giá KPI VINAPHONE Tuần ({display_time})")
+
+# ----------------- BẢNG LỊCH SỬ ĐÁNH GIÁ (TỪ FILE TONGHOP) Ở TRÊN CÙNG -----------------
+if not df_history_raw.empty:
+    with st.expander("📊 LỊCH SỬ ĐÁNH GIÁ CÁC TUẦN TRƯỚC (Từ file Tổng Hợp)", expanded=False):
+        # Lấy các cột tuần (loại bỏ các cột STT, Tên trạm, Khu vực)
+        ten_tram_col = next((c for c in df_history_raw.columns if 'TÊN' in str(c).upper()), None)
+        khu_vuc_col = next((c for c in df_history_raw.columns if 'KHU' in str(c).upper()), None)
+        
+        if ten_tram_col:
+            # Xóa các dòng rỗng tên trạm
+            df_hist = df_history_raw.dropna(subset=[ten_tram_col]).copy()
+            # Tìm các cột có chứa chữ "Tuần"
+            week_cols = [c for c in df_hist.columns if 'TUẦN' in str(c).upper()]
+            
+            hist_header_html = f"""
+            <div class='table-responsive-wrapper'>
+            <table class='table-custom detail-table'>
+            <thead>
+                <tr>
+                    <th class='f-col2' style='min-width:250px; max-width:250px;'>TÊN TRẠM</th>
+                    <th>KHU VỰC</th>
+            """
+            for wc in week_cols:
+                hist_header_html += f"<th style='text-align:center;'>{wc}</th>"
+            hist_header_html += "</tr></thead><tbody>"
+            
+            hist_rows_html = []
+            for _, row in df_hist.iterrows():
+                tram_name = str(row[ten_tram_col]).strip()
+                khu_vuc = str(row[khu_vuc_col]).strip() if khu_vuc_col else ""
+                
+                td_html = ""
+                for wc in week_cols:
+                    val = str(row[wc]).strip().upper()
+                    if val == 'PASS':
+                        td_html += "<td style='text-align:center;'><span class='badge-pass'>PASS</span></td>"
+                    elif val == 'FAIL':
+                        td_html += "<td style='text-align:center;'><span class='badge-fail'>FAIL</span></td>"
+                    else:
+                        display_val = row[wc] if pd.notna(row[wc]) else '-'
+                        td_html += f"<td style='text-align:center; color:#9e9e9e;'>{display_val}</td>"
+                
+                hist_rows_html.append(f"<tr><td class='f-col2'><b>{tram_name}</b></td><td>{khu_vuc}</td>{td_html}</tr>")
+                
+            full_hist_html = hist_header_html + "".join(hist_rows_html) + "</tbody></table></div>"
+            st.markdown(full_hist_html, unsafe_allow_html=True)
+elif file_tonghop is None:
+    st.info("💡 Không tìm thấy file 'Tonghop.xlsx' trong thư mục để hiển thị lịch sử.")
 
 # ----------------- BẢNG TRUNG BÌNH GỘP CÓ FILTER KHU VỰC -----------------
 with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM (GỘP CHUNG 3G & 4G)", expanded=True):
@@ -338,51 +389,6 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
 
     full_table_html = table_header_html + "".join(rows_merged_html) + "</tbody></table></div>"
     st.markdown(full_table_html, unsafe_allow_html=True)
-
-# ----------------- BẢNG LỊCH SỬ ĐÁNH GIÁ (SHEET 2) -----------------
-if not df_history_raw.empty:
-    with st.expander("📊 LỊCH SỬ ĐÁNH GIÁ CÁC TUẦN TRƯỚC (Từ Sheet2)", expanded=False):
-        # Lấy các cột tuần (loại bỏ các cột STT, Tên trạm, Khu vực)
-        ten_tram_col = next((c for c in df_history_raw.columns if 'TÊN' in str(c).upper()), None)
-        khu_vuc_col = next((c for c in df_history_raw.columns if 'KHU' in str(c).upper()), None)
-        
-        if ten_tram_col:
-            # Xóa các dòng rỗng tên trạm
-            df_hist = df_history_raw.dropna(subset=[ten_tram_col]).copy()
-            week_cols = [c for c in df_hist.columns if str(c).isdigit() or 'TUẦN' in str(c).upper()]
-            
-            hist_header_html = f"""
-            <div class='table-responsive-wrapper'>
-            <table class='table-custom detail-table'>
-            <thead>
-                <tr>
-                    <th class='f-col2' style='min-width:250px; max-width:250px;'>TÊN TRẠM</th>
-                    <th>KHU VỰC</th>
-            """
-            for wc in week_cols:
-                hist_header_html += f"<th style='text-align:center;'>Tuần {wc}</th>"
-            hist_header_html += "</tr></thead><tbody>"
-            
-            hist_rows_html = []
-            for _, row in df_hist.iterrows():
-                tram_name = str(row[ten_tram_col]).strip()
-                khu_vuc = str(row[khu_vuc_col]).strip() if khu_vuc_col else ""
-                
-                td_html = ""
-                for wc in week_cols:
-                    val = str(row[wc]).strip().upper()
-                    if val == 'PASS':
-                        td_html += "<td style='text-align:center;'><span class='badge-pass'>PASS</span></td>"
-                    elif val == 'FAIL':
-                        td_html += "<td style='text-align:center;'><span class='badge-fail'>FAIL</span></td>"
-                    else:
-                        display_val = row[wc] if pd.notna(row[wc]) else '-'
-                        td_html += f"<td style='text-align:center; color:#9e9e9e;'>{display_val}</td>"
-                
-                hist_rows_html.append(f"<tr><td class='f-col2'><b>{tram_name}</b></td><td>{khu_vuc}</td>{td_html}</tr>")
-                
-            full_hist_html = hist_header_html + "".join(hist_rows_html) + "</tbody></table></div>"
-            st.markdown(full_hist_html, unsafe_allow_html=True)
 
 
 # ----------------- BỘ LỌC CHỌN TRẠM CỤ THỂ BẢNG CELL -----------------
