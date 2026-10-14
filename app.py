@@ -7,23 +7,26 @@ from io import BytesIO
 
 st.set_page_config(page_title="Đánh giá KPI Trạm 3G/4G", layout="wide")
 
-# 1. NHÚNG CSS VÀ JS
+# 1. NHÚNG CSS TỐI ƯU CHO CẢ PC VÀ MOBILE
 st.markdown("""
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
     html, body, .stApp { max-width: 100vw !important; overflow-x: hidden !important; }
 
-    .kpi-fail { color: #d32f2f; font-weight: bold; }
+    /* Tiêu đề chính gọn gàng hơn */
+    .main-title { font-size: 22px; font-weight: bold; margin-bottom: 12px; color: #fff; line-height: 1.3; }
+
+    .kpi-fail { color: #ff5252; font-weight: bold; }
     .kpi-pass { color: #2e7d32; }
-    .badge-pass { background-color: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
-    .badge-fail { background-color: #ffebee; color: #c62828; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
-    .badge-nodata { background-color: #f5f5f5; color: #757575; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+    .badge-pass { background-color: #e8f5e9; color: #2e7d32; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+    .badge-fail { background-color: #ffebee; color: #c62828; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+    .badge-nodata { background-color: #f5f5f5; color: #757575; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }
     
     .table-responsive-wrapper {
-        width: 100%; max-width: 100vw; max-height: 70vh; 
+        width: 100%; max-width: 100vw; max-height: 72vh; 
         overflow-x: auto; overflow-y: auto; 
         border: 1px solid #444; border-radius: 6px;
-        margin-top: 10px; margin-bottom: 15px;
+        margin-top: 8px; margin-bottom: 15px;
         cursor: grab; user-select: none;
         -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; 
     }
@@ -35,43 +38,66 @@ st.markdown("""
         padding: 8px 10px; border-bottom: 2px solid #555; vertical-align: middle; 
         white-space: nowrap; box-sizing: border-box;
     }
-    .table-custom td { padding: 8px 10px; border-bottom: 1px solid #333; white-space: nowrap; }
+    .table-custom td { padding: 7px 10px; border-bottom: 1px solid #333; white-space: nowrap; }
     
     /* Đảm bảo thead luôn nổi lên trên tbody khi cuộn dọc */
     .table-custom thead { position: sticky; top: 0; z-index: 10; }
-    .combined-table thead tr:first-child th { top: 0; z-index: 10; height: 45px; font-size: 14px; font-weight: bold; }
-    .combined-table thead tr:nth-child(2) th { top: 45px; z-index: 9; }
+    .combined-table thead tr:first-child th { top: 0; z-index: 10; height: 40px; font-size: 13px; font-weight: bold; }
+    .combined-table thead tr:nth-child(2) th { top: 40px; z-index: 9; }
     .detail-table thead tr:first-child th { top: 0; z-index: 10; }
 
-    .th-group-4g { background-color: #0288d1 !important; color: #ffffff !important; text-align: center !important; border-right: 3px solid #ffeb3b !important; font-size: 14px !important; }
-    .th-group-3g { background-color: #e65100 !important; color: #ffffff !important; text-align: center !important; font-size: 14px !important; }
+    .th-group-4g { background-color: #0288d1 !important; color: #ffffff !important; text-align: center !important; border-right: 3px solid #ffeb3b !important; }
+    .th-group-3g { background-color: #e65100 !important; color: #ffffff !important; text-align: center !important; }
 
-    /* Freeze 1 cột (Chỉ cột Tên Trạm) cho bảng Lịch Sử */
-    .f-hist-tram { position: sticky !important; left: 0 !important; min-width: 200px; max-width: 200px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 4; }
+    /* ==========================================================
+       CẤU HÌNH FREEZE CỘT TRÊN MÁY TÍNH (PC)
+       ========================================================== */
+    /* 1. Bảng Lịch Sử: Ghim cột Tên Trạm */
+    .f-hist-tram { position: sticky !important; left: 0 !important; min-width: 190px; max-width: 190px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 4; }
     th.f-hist-tram { z-index: 15 !important; background-color: #1e293b !important; top: 0 !important; }
     td.f-hist-tram { background-color: #1e1e1e !important; color: #eee !important; }
 
-    /* Freeze 2 cột (Mã Trạm + Tên Trạm) cho bảng Trung Bình Gộp */
-    .f-col1 { position: sticky !important; left: 0 !important; min-width: 100px; max-width: 100px; white-space: normal !important; word-wrap: break-word; z-index: 4; }
-    .f-col2 { position: sticky !important; left: 100px !important; min-width: 150px; max-width: 150px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 4; }
+    /* 2. Bảng Trung Bình Gộp: Ghim Mã Trạm + Tên Trạm */
+    .f-col1 { position: sticky !important; left: 0 !important; min-width: 95px; max-width: 95px; white-space: normal !important; word-wrap: break-word; z-index: 4; }
+    .f-col2 { position: sticky !important; left: 95px !important; min-width: 150px; max-width: 150px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 4; }
     th.f-col1, th.f-col2 { z-index: 15 !important; background-color: #1e293b !important; top: 0 !important; } 
     td.f-col1, td.f-col2 { background-color: #1e1e1e !important; color: #eee !important; }
 
-    /* Freeze cột cho bảng Chi tiết 4G */
-    .f-id1 { position: sticky !important; left: 0 !important; min-width: 85px; max-width: 85px; white-space: normal !important; word-wrap: break-word; z-index: 4; }
-    .f-id2 { position: sticky !important; left: 85px !important; min-width: 75px; max-width: 75px; white-space: normal !important; word-wrap: break-word; z-index: 4; }
-    .f-cell-4g { position: sticky !important; left: 160px !important; min-width: 170px; max-width: 170px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 4; }
-    th.f-id1, th.f-id2, th.f-cell-4g { z-index: 15 !important; background-color: #1e293b !important; top: 0 !important; } 
-    td.f-id1, td.f-id2, td.f-cell-4g { background-color: #1e1e1e !important; color: #eee !important; }
+    /* 3. Bảng Chi tiết Cell 4G & 3G: Đưa cột CELL lên đầu và chỉ ghim duy nhất cột CELL để tiết kiệm chỗ */
+    .f-cell-sticky { position: sticky !important; left: 0 !important; min-width: 175px; max-width: 175px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 4; }
+    th.f-cell-sticky { z-index: 15 !important; background-color: #1e293b !important; top: 0 !important; }
+    td.f-cell-sticky { background-color: #1e1e1e !important; color: #eee !important; }
 
-    /* Freeze cột cho bảng Chi tiết 3G */
-    .f-ci { position: sticky !important; left: 0 !important; min-width: 80px; max-width: 80px; white-space: normal !important; word-wrap: break-word; z-index: 4; }
-    .f-cell-3g { position: sticky !important; left: 80px !important; min-width: 190px; max-width: 190px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 4; }
-    th.f-ci, th.f-cell-3g { z-index: 15 !important; background-color: #1e293b !important; top: 0 !important; } 
-    td.f-ci, td.f-cell-3g { background-color: #1e1e1e !important; color: #eee !important; }
+    .header-station { background-color: #1e293b; padding: 10px 14px; border-left: 4px solid #1976d2; border-radius: 4px; margin: 12px 0 4px 0; color: #fff; }
+    .kpi-target { font-size: 10px; color: #ffeb3b; display: block; margin-top: 2px; }
 
-    .header-station { background-color: #1e293b; padding: 12px 16px; border-left: 5px solid #1976d2; border-radius: 4px; margin: 15px 0 5px 0; color: #fff; }
-    .kpi-target { font-size: 11px; color: #ffeb3b; display: block; margin-top: 2px; }
+    /* ==========================================================
+       TỐI ƯU HÓA RIÊNG CHO ĐIỆN THOẠI (MÀN HÌNH <= 768px)
+       ========================================================== */
+    @media screen and (max-width: 768px) {
+        /* Mở rộng sát lề màn hình điện thoại */
+        .block-container { padding-left: 0.5rem !important; padding-right: 0.5rem !important; padding-top: 1rem !important; }
+        .main-title { font-size: 17px !important; }
+        
+        /* Thu gọn font chữ và khoảng cách ô trong bảng */
+        .table-custom { font-size: 11.5px !important; }
+        .table-custom th, .table-custom td { padding: 5px 6px !important; }
+        .combined-table thead tr:first-child th { height: 32px; font-size: 11.5px; }
+        .combined-table thead tr:nth-child(2) th { top: 32px; }
+
+        /* Bảng Lịch sử: Thu nhỏ cột Tên Trạm xuống 125px (chừa hơn 65% màn hình xem các tuần) */
+        .f-hist-tram { min-width: 125px !important; max-width: 125px !important; font-size: 11px !important; }
+
+        /* Bảng Trung bình gộp: Chỉ ghim cột Mã Trạm (85px), thả cột Tên Trạm trôi tự do để không che màn hình */
+        .f-col1 { min-width: 85px !important; max-width: 85px !important; border-right: 2px solid #1976d2 !important; }
+        .f-col2 { position: static !important; min-width: 120px !important; max-width: 140px !important; border-right: 1px solid #333 !important; }
+        th.f-col2 { z-index: 9 !important; }
+
+        /* Bảng Chi tiết Cell: Cột CELL ghim gọn ở mức 130px (dư hơn 60% màn hình bên phải để xem KPI) */
+        .f-cell-sticky { min-width: 130px !important; max-width: 130px !important; font-size: 11px !important; }
+        
+        .header-station { padding: 8px 10px; font-size: 13px; }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -169,7 +195,7 @@ file_mapping = tim_file_excel("TRAM") or tim_file_excel("MÃ") or tim_file_excel
 file_tonghop = tim_file_excel("TONGHOP")
 
 if not (file_mapping and file_3g and file_4g):
-    st.title("📊 Kiểm Tra & Đánh Giá KPI VINAPHONE Tuần")
+    st.markdown("<div class='main-title'>📊 Kiểm Tra & Đánh Giá KPI VINAPHONE Tuần</div>", unsafe_allow_html=True)
     st.error("⚠️ Chưa tìm đủ file '3G', '4G', 'TRAM'.")
     st.stop()
 
@@ -262,7 +288,7 @@ df_3g_prep, active_kpis_3g, cols_3g, time_3g_sample = prepare_net_df(file_3g, KP
 display_time = time_4g_sample or time_3g_sample
 if not display_time: display_time = datetime.now().strftime("%d/%m/%Y")
 
-# ----------------- TÍNH TOÁN TRUNG BÌNH & KẾT QUẢ TỔNG (TRƯỚC KHI HIỂN THỊ) -----------------
+# ----------------- TÍNH TOÁN TRUNG BÌNH & KẾT QUẢ TỔNG -----------------
 mean_4g = df_4g_prep.groupby('MATCHED_ST')[list(active_kpis_4g.keys())].mean() if df_4g_prep is not None and not df_4g_prep.empty else pd.DataFrame()
 mean_3g = df_3g_prep.groupby('MATCHED_ST')[list(active_kpis_3g.keys())].mean() if df_3g_prep is not None and not df_3g_prep.empty else pd.DataFrame()
 
@@ -295,7 +321,7 @@ for st_code in all_stations_ui:
 
 
 # =====================================================================================
-# CHUYỂN BẢNG LỊCH SỬ LÊN TRÊN CÙNG (ĐÃ FIX FREEZE CỘT TÊN TRẠM)
+# 1. BẢNG LỊCH SỬ CÁC TUẦN
 # =====================================================================================
 if not df_history_raw.empty:
     with st.expander("📊 LỊCH SỬ ĐÁNH GIÁ CÁC TUẦN TRƯỚC (Từ file Tổng Hợp)", expanded=False):
@@ -337,7 +363,7 @@ if not df_history_raw.empty:
 
             tuan_can_dien = None
             if is_duplicate:
-                st.info(f"💡 Dữ liệu tính toán hoàn toàn giống với **{last_filled_week}**. Hệ thống tự động bỏ qua ghi đè để tránh lưu trùng lặp (có thể bạn đã load file đánh giá này rồi).")
+                st.info(f"💡 Dữ liệu tính toán hoàn toàn giống với **{last_filled_week}**. Hệ thống tự động bỏ qua ghi đè.")
             elif first_empty_week:
                 tuan_can_dien = first_empty_week
                 for idx, row in df_hist.iterrows():
@@ -347,7 +373,6 @@ if not df_history_raw.empty:
             else:
                 st.warning("⚠️ File Tổng hợp đã được điền kín các tuần. Không còn cột trống để ánh xạ!")
 
-            # Sử dụng class f-hist-tram (left: 0) để chỉ khóa đúng cột TÊN TRẠM
             hist_header_html = """
             <div class='table-responsive-wrapper'>
             <table class='table-custom detail-table'>
@@ -358,7 +383,7 @@ if not df_history_raw.empty:
             """
             for wc in week_cols:
                 if wc == tuan_can_dien: 
-                    hist_header_html += f"<th style='text-align:center; color:#ffeb3b;'>{wc} (Mới cập nhật)</th>"
+                    hist_header_html += f"<th style='text-align:center; color:#ffeb3b;'>{wc} (Mới)</th>"
                 else: 
                     hist_header_html += f"<th style='text-align:center;'>{wc}</th>"
             hist_header_html += "</tr></thead><tbody>"
@@ -401,11 +426,10 @@ elif file_tonghop is None:
 
 
 # =====================================================================================
-# TIÊU ĐỀ CHÍNH VÀ CÁC BẢNG BÊN DƯỚI
+# 2. TIÊU ĐỀ CHÍNH GỌN GÀNG & BẢNG TRUNG BÌNH GỘP
 # =====================================================================================
-st.title(f"📊 Kiểm Tra & Đánh Giá KPI VINAPHONE Tuần ({display_time})")
+st.markdown(f"<div class='main-title'>📊 Đánh Giá KPI VINAPHONE Tuần ({display_time})</div>", unsafe_allow_html=True)
 
-# ----------------- BẢNG TRUNG BÌNH GỘP CÓ FILTER KHU VỰC -----------------
 with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM (GỘP CHUNG 3G & 4G)", expanded=False):
     col_filter1, col_filter2, col_filter3 = st.columns([1, 1, 1.5])
     
@@ -460,7 +484,7 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
                 has_any_data = True
                 if not is_ok:
                     station_failed = True
-                    cols_td += f"<td style='text-align:right; color:#d32f2f; font-weight:bold;'>{formatted_val}</td>"
+                    cols_td += f"<td style='text-align:right; color:#ff5252; font-weight:bold;'>{formatted_val}</td>"
                 else: cols_td += f"<td style='text-align:right;'>{formatted_val}</td>"
 
         for c, rule in active_kpis_3g.items():
@@ -471,10 +495,10 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
                 has_any_data = True
                 if not is_ok:
                     station_failed = True
-                    cols_td += f"<td style='text-align:right; color:#d32f2f; font-weight:bold;'>{formatted_val}</td>"
+                    cols_td += f"<td style='text-align:right; color:#ff5252; font-weight:bold;'>{formatted_val}</td>"
                 else: cols_td += f"<td style='text-align:right;'>{formatted_val}</td>"
 
-        if not has_any_data: badge, kq_type = "<span class='badge-nodata'>Chưa có dữ liệu</span>", "NODATA"
+        if not has_any_data: badge, kq_type = "<span class='badge-nodata'>Chưa có DL</span>", "NODATA"
         elif station_failed: badge, kq_type = "<span class='badge-fail'>FAIL</span>", "FAIL"
         else: badge, kq_type = "<span class='badge-pass'>ĐẠT</span>", "PASS"
 
@@ -487,7 +511,9 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
     st.markdown(full_table_html, unsafe_allow_html=True)
 
 
-# ----------------- BỘ LỌC CHỌN TRẠM CỤ THỂ BẢNG CELL -----------------
+# =====================================================================================
+# 3. BẢNG CHI TIẾT CELL (CHỈ GHIM CỘT CELL ĐẦU TIÊN ĐỂ RỘNG MÀN HÌNH ĐIỆN THOẠI)
+# =====================================================================================
 selected_stations = st.multiselect(
     "🔍 Chọn Mã Trạm cần xem chi tiết Cell:",
     options=all_stations_ui,
@@ -517,17 +543,20 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
         
         kpi_headers_html = "".join([f"<th style='text-align:right;'>{rule['label']}</th>" for rule in active_kpis.values()])
         
-        if net_label == '4G': th_id = "<th class='f-id1'>ENODEB ID</th><th class='f-id2'>CELL ID</th><th class='f-cell-4g'>CELL</th>"
-        else: th_id = "<th class='f-ci'>CI</th><th class='f-cell-3g'>CELL</th>"
+        # Đưa cột CELL lên đầu tiên để ghim (f-cell-sticky), tiếp theo là KQ và các ID phụ
+        if net_label == '4G': 
+            th_id = "<th class='f-cell-sticky'>CELL</th><th style='text-align:center;'>KQ</th><th>ENODEB ID</th><th>CELL ID</th>"
+        else: 
+            th_id = "<th class='f-cell-sticky'>CELL</th><th style='text-align:center;'>KQ</th><th>CI</th>"
         
         html_blocks.append(f"""
         <div class="header-station">
-            <b style="font-size: 16px;">🔬 Chi Tiết Cell — {building_name} ({st_code})</b> 
-            <span style="color: #666; font-size: 13px; margin-left: 10px;">• {cell_count} cells</span>
+            <b>🔬 Chi Tiết Cell — {building_name} ({st_code})</b> 
+            <span style="color: #94a3b8; font-size: 12px; margin-left: 8px;">• {cell_count} cells</span>
         </div>
         <div class='table-responsive-wrapper'>
         <table class='table-custom detail-table'><thead><tr>
-            {th_id}<th style='text-align:center;'>KQ</th>
+            {th_id}
             {kpi_headers_html}
         </tr></thead><tbody>
         """)
@@ -546,9 +575,9 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
         avg_badge = "<span class='badge-pass'>ĐẠT</span>" if avg_is_pass else "<span class='badge-fail'>FAIL</span>"
         
         if net_label == '4G':
-            html_blocks.append(f"<tr style='background-color: #1a1a1a;'><td colspan='2' class='f-id1' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffffff;'><b>TRUNG BÌNH TRẠM</b></span></td><td class='f-cell-4g' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffffff;'>↳ Toàn Trạm</span></td><td style='text-align:center; border-bottom: 2px solid #444;'>{avg_badge}</td>{avg_cols_html}</tr>")
+            html_blocks.append(f"<tr style='background-color: #1a1a1a;'><td class='f-cell-sticky' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffeb3b;'><b>TB TRẠM</b></span></td><td style='text-align:center; border-bottom: 2px solid #444;'>{avg_badge}</td><td colspan='2' style='color:#9e9e9e; text-align:center; border-bottom: 2px solid #444;'>Toàn trạm</td>{avg_cols_html}</tr>")
         else:
-            html_blocks.append(f"<tr style='background-color: #1a1a1a;'><td class='f-ci' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffffff;'><b>TRUNG BÌNH TRẠM</b></span></td><td class='f-cell-3g' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffffff;'>↳ Toàn Trạm</span></td><td style='text-align:center; border-bottom: 2px solid #444;'>{avg_badge}</td>{avg_cols_html}</tr>")
+            html_blocks.append(f"<tr style='background-color: #1a1a1a;'><td class='f-cell-sticky' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffeb3b;'><b>TB TRẠM</b></span></td><td style='text-align:center; border-bottom: 2px solid #444;'>{avg_badge}</td><td style='color:#9e9e9e; text-align:center; border-bottom: 2px solid #444;'>Toàn trạm</td>{avg_cols_html}</tr>")
 
         col_enodeb = extra_cols.get('ENODEB')
         col_cellid = extra_cols.get('CELLID')
@@ -573,11 +602,11 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
                 val_cid = str(row[col_cellid]).replace('.0', '') if col_cellid and not pd.isna(row[col_cellid]) else "-"
                 if val_en == 'nan': val_en = "-"
                 if val_cid == 'nan': val_cid = "-"
-                html_blocks.append(f"<tr><td class='f-id1'>{val_en}</td><td class='f-id2'>{val_cid}</td><td class='f-cell-4g'>↳ {cell_name}</td><td style='text-align:center;'>{status_badge}</td>{cols_html}</tr>")
+                html_blocks.append(f"<tr><td class='f-cell-sticky'>{cell_name}</td><td style='text-align:center;'>{status_badge}</td><td style='color:#aaa;'>{val_en}</td><td style='color:#aaa;'>{val_cid}</td>{cols_html}</tr>")
             else:
                 val_ci = str(row[col_ci]).replace('.0', '') if col_ci and not pd.isna(row[col_ci]) else "-"
                 if val_ci == 'nan': val_ci = "-"
-                html_blocks.append(f"<tr><td class='f-ci'>{val_ci}</td><td class='f-cell-3g'>↳ {cell_name}</td><td style='text-align:center;'>{status_badge}</td>{cols_html}</tr>")
+                html_blocks.append(f"<tr><td class='f-cell-sticky'>{cell_name}</td><td style='text-align:center;'>{status_badge}</td><td style='color:#aaa;'>{val_ci}</td>{cols_html}</tr>")
 
         html_blocks.append("</tbody></table></div>")
 
