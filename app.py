@@ -37,27 +37,37 @@ st.markdown("""
     }
     .table-custom td { padding: 8px 10px; border-bottom: 1px solid #333; white-space: nowrap; }
     
-    .combined-table thead tr:first-child th { top: 0; z-index: 5; height: 45px; font-size: 14px; font-weight: bold; }
-    .combined-table thead tr:nth-child(2) th { top: 45px; z-index: 4; }
-    .detail-table thead tr:first-child th { top: 0; z-index: 5; }
+    /* Đảm bảo thead luôn nổi lên trên tbody khi cuộn dọc */
+    .table-custom thead { position: sticky; top: 0; z-index: 10; }
+    .combined-table thead tr:first-child th { top: 0; z-index: 10; height: 45px; font-size: 14px; font-weight: bold; }
+    .combined-table thead tr:nth-child(2) th { top: 45px; z-index: 9; }
+    .detail-table thead tr:first-child th { top: 0; z-index: 10; }
 
     .th-group-4g { background-color: #0288d1 !important; color: #ffffff !important; text-align: center !important; border-right: 3px solid #ffeb3b !important; font-size: 14px !important; }
     .th-group-3g { background-color: #e65100 !important; color: #ffffff !important; text-align: center !important; font-size: 14px !important; }
 
-    .f-col1 { position: sticky !important; left: 0 !important; min-width: 120px; max-width: 120px; white-space: normal !important; word-wrap: break-word; z-index: 3; }
-    .f-col2 { position: sticky !important; left: 120px !important; min-width: 160px; max-width: 160px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 3; }
-    th.f-col1, th.f-col2 { z-index: 6 !important; background-color: #1e293b !important; } 
+    /* Freeze 1 cột (Chỉ cột Tên Trạm) cho bảng Lịch Sử */
+    .f-hist-tram { position: sticky !important; left: 0 !important; min-width: 200px; max-width: 200px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 4; }
+    th.f-hist-tram { z-index: 15 !important; background-color: #1e293b !important; top: 0 !important; }
+    td.f-hist-tram { background-color: #1e1e1e !important; color: #eee !important; }
+
+    /* Freeze 2 cột (Mã Trạm + Tên Trạm) cho bảng Trung Bình Gộp */
+    .f-col1 { position: sticky !important; left: 0 !important; min-width: 100px; max-width: 100px; white-space: normal !important; word-wrap: break-word; z-index: 4; }
+    .f-col2 { position: sticky !important; left: 100px !important; min-width: 150px; max-width: 150px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 4; }
+    th.f-col1, th.f-col2 { z-index: 15 !important; background-color: #1e293b !important; top: 0 !important; } 
     td.f-col1, td.f-col2 { background-color: #1e1e1e !important; color: #eee !important; }
 
-    .f-id1 { position: sticky !important; left: 0 !important; min-width: 90px; max-width: 90px; white-space: normal !important; word-wrap: break-word; z-index: 3; }
-    .f-id2 { position: sticky !important; left: 90px !important; min-width: 80px; max-width: 80px; white-space: normal !important; word-wrap: break-word; z-index: 3; }
-    .f-cell-4g { position: sticky !important; left: 170px !important; min-width: 180px; max-width: 180px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 3; }
-    th.f-id1, th.f-id2, th.f-cell-4g { z-index: 6 !important; background-color: #1e293b !important; } 
+    /* Freeze cột cho bảng Chi tiết 4G */
+    .f-id1 { position: sticky !important; left: 0 !important; min-width: 85px; max-width: 85px; white-space: normal !important; word-wrap: break-word; z-index: 4; }
+    .f-id2 { position: sticky !important; left: 85px !important; min-width: 75px; max-width: 75px; white-space: normal !important; word-wrap: break-word; z-index: 4; }
+    .f-cell-4g { position: sticky !important; left: 160px !important; min-width: 170px; max-width: 170px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 4; }
+    th.f-id1, th.f-id2, th.f-cell-4g { z-index: 15 !important; background-color: #1e293b !important; top: 0 !important; } 
     td.f-id1, td.f-id2, td.f-cell-4g { background-color: #1e1e1e !important; color: #eee !important; }
 
-    .f-ci { position: sticky !important; left: 0 !important; min-width: 80px; max-width: 80px; white-space: normal !important; word-wrap: break-word; z-index: 3; }
-    .f-cell-3g { position: sticky !important; left: 80px !important; min-width: 200px; max-width: 200px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 3; }
-    th.f-ci, th.f-cell-3g { z-index: 6 !important; background-color: #1e293b !important; } 
+    /* Freeze cột cho bảng Chi tiết 3G */
+    .f-ci { position: sticky !important; left: 0 !important; min-width: 80px; max-width: 80px; white-space: normal !important; word-wrap: break-word; z-index: 4; }
+    .f-cell-3g { position: sticky !important; left: 80px !important; min-width: 190px; max-width: 190px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 4; }
+    th.f-ci, th.f-cell-3g { z-index: 15 !important; background-color: #1e293b !important; top: 0 !important; } 
     td.f-ci, td.f-cell-3g { background-color: #1e1e1e !important; color: #eee !important; }
 
     .header-station { background-color: #1e293b; padding: 12px 16px; border-left: 5px solid #1976d2; border-radius: 4px; margin: 15px 0 5px 0; color: #fff; }
@@ -256,7 +266,6 @@ if not display_time: display_time = datetime.now().strftime("%d/%m/%Y")
 mean_4g = df_4g_prep.groupby('MATCHED_ST')[list(active_kpis_4g.keys())].mean() if df_4g_prep is not None and not df_4g_prep.empty else pd.DataFrame()
 mean_3g = df_3g_prep.groupby('MATCHED_ST')[list(active_kpis_3g.keys())].mean() if df_3g_prep is not None and not df_3g_prep.empty else pd.DataFrame()
 
-# Khởi tạo Dictionary để lưu kết quả tổng của từng Trạm (dựa theo Tên Trạm)
 station_results_by_name = {}
 
 for st_code in all_stations_ui:
@@ -286,7 +295,7 @@ for st_code in all_stations_ui:
 
 
 # =====================================================================================
-# CHUYỂN BẢNG LỊCH SỬ LÊN TRÊN CÙNG
+# CHUYỂN BẢNG LỊCH SỬ LÊN TRÊN CÙNG (ĐÃ FIX FREEZE CỘT TÊN TRẠM)
 # =====================================================================================
 if not df_history_raw.empty:
     with st.expander("📊 LỊCH SỬ ĐÁNH GIÁ CÁC TUẦN TRƯỚC (Từ file Tổng Hợp)", expanded=False):
@@ -297,11 +306,9 @@ if not df_history_raw.empty:
             df_hist = df_history_raw.dropna(subset=[ten_tram_col]).copy()
             week_cols = [c for c in df_hist.columns if 'TUẦN' in str(c).upper()]
             
-            # --- TÌM TUẦN TRỐNG ĐẦU TIÊN VÀ KIỂM TRA TRÙNG LẶP ---
             last_filled_week = None
             first_empty_week = None
             
-            # Duyệt các cột tuần để xác định tuần cuối có dữ liệu và tuần trống đầu tiên
             for wc in week_cols:
                 col_vals = df_hist[wc].astype(str).str.strip().str.upper()
                 if col_vals.isin(['PASS', 'FAIL']).any():
@@ -310,7 +317,6 @@ if not df_history_raw.empty:
                     first_empty_week = wc
                     break
             
-            # Kiểm tra xem kết quả hiện tại có giống hệt tuần trước không (chống trùng lặp)
             is_duplicate = False
             if last_filled_week and first_empty_week:
                 differences = 0
@@ -321,13 +327,11 @@ if not df_history_raw.empty:
                         current_val = station_results_by_name[tram_name].upper()
                         prev_val = str(row[last_filled_week]).strip().upper()
                         
-                        # Chỉ so sánh nếu tuần trước có kết quả PASS/FAIL
                         if prev_val in ['PASS', 'FAIL']:
                             valid_comparisons += 1
                             if current_val != prev_val:
                                 differences += 1
                 
-                # Nếu có so sánh và không có bất kỳ sự sai lệch nào -> Dữ liệu giống hệt 100%
                 if valid_comparisons > 0 and differences == 0:
                     is_duplicate = True
 
@@ -342,14 +346,14 @@ if not df_history_raw.empty:
                         df_hist.at[idx, tuan_can_dien] = station_results_by_name[tram_name]
             else:
                 st.warning("⚠️ File Tổng hợp đã được điền kín các tuần. Không còn cột trống để ánh xạ!")
-            # --------------------------------------------------------
 
-            hist_header_html = f"""
+            # Sử dụng class f-hist-tram (left: 0) để chỉ khóa đúng cột TÊN TRẠM
+            hist_header_html = """
             <div class='table-responsive-wrapper'>
             <table class='table-custom detail-table'>
             <thead>
                 <tr>
-                    <th class='f-col2' style='min-width:250px; max-width:250px;'>TÊN TRẠM</th>
+                    <th class='f-hist-tram'>TÊN TRẠM</th>
                     <th>KHU VỰC</th>
             """
             for wc in week_cols:
@@ -375,12 +379,11 @@ if not df_history_raw.empty:
                         display_val = row[wc] if pd.notna(row[wc]) else '-'
                         td_html += f"<td style='text-align:center; color:#9e9e9e;'>{display_val}</td>"
                 
-                hist_rows_html.append(f"<tr><td class='f-col2'><b>{tram_name}</b></td><td>{khu_vuc}</td>{td_html}</tr>")
+                hist_rows_html.append(f"<tr><td class='f-hist-tram'><b>{tram_name}</b></td><td>{khu_vuc}</td>{td_html}</tr>")
                 
             full_hist_html = hist_header_html + "".join(hist_rows_html) + "</tbody></table></div>"
             st.markdown(full_hist_html, unsafe_allow_html=True)
 
-            # Chỉ hiển thị nút tải xuống khi có chèn dữ liệu mới vào file
             if tuan_can_dien:
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
