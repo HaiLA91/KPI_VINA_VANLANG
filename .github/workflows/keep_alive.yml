@@ -1,0 +1,63 @@
+name: Keep Streamlit Awake (8h - 18h VN)
+
+on:
+  schedule:
+    # 1. Gọi dậy lúc 7:45 sáng (giờ VN) để 8:00 sẵn sàng dùng ngay (0:45 UTC)
+    - cron: '45 0 * * *'
+    
+    # 2. Duy trì thức mỗi 2 tiếng từ 8:00 sáng đến 18:00 tối giờ VN (1:00 - 11:00 UTC)
+    # Chạy vào các khung giờ VN: 8:00, 10:00, 12:00, 14:00, 16:00, 18:00
+    - cron: '0 1-11/2 * * *'
+
+  workflow_dispatch: # Cho phép bạn bấm nút chạy thử ngay lập tức bằng tay
+
+jobs:
+  wake-up:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright Chromium
+        run: |
+          npm init -y
+          npm install playwright
+          npx playwright install chromium --with-deps
+
+      - name: Visit and Wake Up Streamlit App
+        run: |
+          node -e '
+          const { chromium } = require("playwright");
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage();
+            
+            console.log("Đang mở trang https://hoanghaikpi.streamlit.app/ ...");
+            await page.goto("https://hoanghaikpi.streamlit.app/", { 
+              waitUntil: "domcontentloaded", 
+              timeout: 60000 
+            });
+            
+            // Đợi 5 giây cho giao diện Streamlit tải xong
+            await page.waitForTimeout(5000);
+            
+            // Kiểm tra nút đánh thức nếu app ngủ qua đêm
+            const wakeButton = page.locator("button:has-text(\"Yes, get this app back up!\")");
+            if (await wakeButton.count() > 0 && await wakeButton.isVisible()) {
+              console.log("Phát hiện app đang ngủ! Đang bấm nút đánh thức...");
+              await wakeButton.click();
+              // Đợi 25 giây để container Streamlit khởi động hoàn tất
+              await page.waitForTimeout(25000);
+              console.log("Đã đánh thức app thành công!");
+            } else {
+              console.log("App đang thức và hoạt động bình thường!");
+              // Giữ kết nối WebSocket thêm 10 giây để Streamlit ghi nhận có người dùng thật
+              await page.waitForTimeout(10000);
+            }
+            
+            await browser.close();
+          })();
+          '
