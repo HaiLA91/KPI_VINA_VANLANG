@@ -52,18 +52,15 @@ st.markdown("""
     /* ==========================================================
        CẤU HÌNH FREEZE CỘT TRÊN MÁY TÍNH (PC)
        ========================================================== */
-    /* 1. Bảng Lịch Sử: Ghim cột Tên Trạm */
     .f-hist-tram { position: sticky !important; left: 0 !important; min-width: 190px; max-width: 190px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 4; }
     th.f-hist-tram { z-index: 15 !important; background-color: #1e293b !important; top: 0 !important; }
     td.f-hist-tram { background-color: #1e1e1e !important; color: #eee !important; }
 
-    /* 2. Bảng Trung Bình Gộp: Ghim Mã Trạm + Tên Trạm */
     .f-col1 { position: sticky !important; left: 0 !important; min-width: 95px; max-width: 95px; white-space: normal !important; word-wrap: break-word; z-index: 4; }
     .f-col2 { position: sticky !important; left: 95px !important; min-width: 150px; max-width: 150px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 4; }
     th.f-col1, th.f-col2 { z-index: 15 !important; background-color: #1e293b !important; top: 0 !important; } 
     td.f-col1, td.f-col2 { background-color: #1e1e1e !important; color: #eee !important; }
 
-    /* 3. Bảng Chi tiết Cell 4G & 3G: Đưa cột CELL lên đầu và chỉ ghim duy nhất cột CELL để tiết kiệm chỗ */
     .f-cell-sticky { position: sticky !important; left: 0 !important; min-width: 175px; max-width: 175px; white-space: normal !important; word-wrap: break-word; border-right: 2px solid #1976d2 !important; z-index: 4; }
     th.f-cell-sticky { z-index: 15 !important; background-color: #1e293b !important; top: 0 !important; }
     td.f-cell-sticky { background-color: #1e1e1e !important; color: #eee !important; }
@@ -75,25 +72,25 @@ st.markdown("""
        TỐI ƯU HÓA RIÊNG CHO ĐIỆN THOẠI (MÀN HÌNH <= 768px)
        ========================================================== */
     @media screen and (max-width: 768px) {
-        /* Mở rộng sát lề màn hình điện thoại */
-        .block-container { padding-left: 0.5rem !important; padding-right: 0.5rem !important; padding-top: 1rem !important; }
-        .main-title { font-size: 17px !important; }
+        /* Giữ padding-top 3.5rem để không bị thanh Header/Fork của Streamlit che mất phần tử đầu tiên */
+        .block-container { 
+            padding-left: 0.5rem !important; 
+            padding-right: 0.5rem !important; 
+            padding-top: 3.5rem !important; 
+        }
+        .main-title { font-size: 16px !important; margin-bottom: 10px !important; }
         
-        /* Thu gọn font chữ và khoảng cách ô trong bảng */
         .table-custom { font-size: 11.5px !important; }
         .table-custom th, .table-custom td { padding: 5px 6px !important; }
         .combined-table thead tr:first-child th { height: 32px; font-size: 11.5px; }
         .combined-table thead tr:nth-child(2) th { top: 32px; }
 
-        /* Bảng Lịch sử: Thu nhỏ cột Tên Trạm xuống 125px (chừa hơn 65% màn hình xem các tuần) */
         .f-hist-tram { min-width: 125px !important; max-width: 125px !important; font-size: 11px !important; }
 
-        /* Bảng Trung bình gộp: Chỉ ghim cột Mã Trạm (85px), thả cột Tên Trạm trôi tự do để không che màn hình */
         .f-col1 { min-width: 85px !important; max-width: 85px !important; border-right: 2px solid #1976d2 !important; }
         .f-col2 { position: static !important; min-width: 120px !important; max-width: 140px !important; border-right: 1px solid #333 !important; }
         th.f-col2 { z-index: 9 !important; }
 
-        /* Bảng Chi tiết Cell: Cột CELL ghim gọn ở mức 130px (dư hơn 60% màn hình bên phải để xem KPI) */
         .f-cell-sticky { min-width: 130px !important; max-width: 130px !important; font-size: 11px !important; }
         
         .header-station { padding: 8px 10px; font-size: 13px; }
@@ -321,7 +318,12 @@ for st_code in all_stations_ui:
 
 
 # =====================================================================================
-# 1. BẢNG LỊCH SỬ CÁC TUẦN
+# 1. ĐƯA TIÊU ĐỀ CHÍNH LÊN ĐẦU TIÊN
+# =====================================================================================
+st.markdown(f"<div class='main-title'>📊 Đánh Giá KPI VINAPHONE Tuần ({display_time})</div>", unsafe_allow_html=True)
+
+# =====================================================================================
+# 2. BẢNG LỊCH SỬ CÁC TUẦN (NẰM NGAY DƯỚI TIÊU ĐỀ, KHÔNG BỊ CHE KHUẤT)
 # =====================================================================================
 if not df_history_raw.empty:
     with st.expander("📊 LỊCH SỬ ĐÁNH GIÁ CÁC TUẦN TRƯỚC (Từ file Tổng Hợp)", expanded=False):
@@ -426,10 +428,8 @@ elif file_tonghop is None:
 
 
 # =====================================================================================
-# 2. TIÊU ĐỀ CHÍNH GỌN GÀNG & BẢNG TRUNG BÌNH GỘP
+# 3. BẢNG TRUNG BÌNH GỘP
 # =====================================================================================
-st.markdown(f"<div class='main-title'>📊 Đánh Giá KPI VINAPHONE Tuần ({display_time})</div>", unsafe_allow_html=True)
-
 with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM (GỘP CHUNG 3G & 4G)", expanded=False):
     col_filter1, col_filter2, col_filter3 = st.columns([1, 1, 1.5])
     
@@ -512,7 +512,7 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
 
 
 # =====================================================================================
-# 3. BẢNG CHI TIẾT CELL (CHỈ GHIM CỘT CELL ĐẦU TIÊN ĐỂ RỘNG MÀN HÌNH ĐIỆN THOẠI)
+# 4. BẢNG CHI TIẾT CELL
 # =====================================================================================
 selected_stations = st.multiselect(
     "🔍 Chọn Mã Trạm cần xem chi tiết Cell:",
@@ -543,7 +543,6 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
         
         kpi_headers_html = "".join([f"<th style='text-align:right;'>{rule['label']}</th>" for rule in active_kpis.values()])
         
-        # Đưa cột CELL lên đầu tiên để ghim (f-cell-sticky), tiếp theo là KQ và các ID phụ
         if net_label == '4G': 
             th_id = "<th class='f-cell-sticky'>CELL</th><th style='text-align:center;'>KQ</th><th>ENODEB ID</th><th>CELL ID</th>"
         else: 
