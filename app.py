@@ -326,7 +326,7 @@ st.markdown(f"<div class='main-title'>📊 Đánh Giá KPI VINAPHONE Tuần ({di
 # 2. BẢNG LỊCH SỬ CÁC TUẦN (NẰM NGAY DƯỚI TIÊU ĐỀ, KHÔNG BỊ CHE KHUẤT)
 # =====================================================================================
 if not df_history_raw.empty:
-    with st.expander("📊 LỊCH SỬ ĐÁNH GIÁ CÁC TUẦN TRƯỚC (Từ file Tổng Hợp)", expanded=False):
+    with st.expander("📊 LỊCH SỬ ĐÁNH GIÁ CÁC TUẦN TRƯỚC", expanded=False):
         ten_tram_col = next((c for c in df_history_raw.columns if 'TÊN' in str(c).upper()), None)
         khu_vuc_col = next((c for c in df_history_raw.columns if 'KHU' in str(c).upper()), None)
         
@@ -430,7 +430,7 @@ elif file_tonghop is None:
 # =====================================================================================
 # 3. BẢNG TRUNG BÌNH GỘP
 # =====================================================================================
-with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM (GỘP CHUNG 3G & 4G)", expanded=False):
+with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} TRẠM", expanded=False):
     col_filter1, col_filter2, col_filter3 = st.columns([1, 1, 1.5])
     
     with col_filter1:
