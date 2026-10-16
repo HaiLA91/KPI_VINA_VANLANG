@@ -41,8 +41,8 @@ jobs:
               timeout: 60000 
             });
             
-            // Đợi 5 giây cho giao diện Streamlit tải xong
-            await page.waitForTimeout(5000);
+            // Đợi thêm 15 giây để chắc chắn giao diện ngủ của Streamlit đã tải xong
+            await page.waitForTimeout(15000);
             
             // Kiểm tra nút đánh thức nếu app ngủ qua đêm
             const wakeButton = page.locator("button:has-text(\"Yes, get this app back up!\")");
