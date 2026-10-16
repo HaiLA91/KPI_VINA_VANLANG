@@ -2,12 +2,12 @@ name: Keep Streamlit Awake (8h - 18h VN)
 
 on:
   schedule:
-    # 1. Gọi dậy lúc 7:45 sáng (giờ VN) để 8:00 sẵn sàng dùng ngay (0:45 UTC)
-    - cron: '45 0 * * *'
+    # 1. Gọi dậy lúc 7:49 sáng (giờ VN) để 8:00 sẵn sàng dùng ngay (0:45 UTC)
+    - cron: '49 0 * * *'
     
     # 2. Duy trì thức mỗi 2 tiếng từ 8:00 sáng đến 18:00 tối giờ VN (1:00 - 11:00 UTC)
     # Chạy vào các khung giờ VN: 8:00, 10:00, 12:00, 14:00, 16:00, 18:00
-    - cron: '0 1-11/2 * * *'
+    - cron: '0 1-11/4 * * *'
 
   workflow_dispatch: # Cho phép bạn bấm nút chạy thử ngay lập tức bằng tay
 
