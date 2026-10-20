@@ -333,7 +333,7 @@ if not df_history_raw.empty:
         if ten_tram_col:
             df_hist = df_history_raw.dropna(subset=[ten_tram_col]).copy()
             week_cols = [c for c in df_hist.columns if 'TUẦN' in str(c).upper()]
-            
+            df_hist[week_cols] = df_hist[week_cols].astype(object)
             last_filled_week = None
             first_empty_week = None
             
@@ -368,6 +368,8 @@ if not df_history_raw.empty:
                 st.info(f"💡 Dữ liệu tính toán hoàn toàn giống với **{last_filled_week}**. Hệ thống tự động bỏ qua ghi đè.")
             elif first_empty_week:
                 tuan_can_dien = first_empty_week
+                # Ép kiểu cột trống sang object để cho phép ghi chữ "Pass"/"Fail" mà không bị lỗi TypeError
+                df_hist[tuan_can_dien] = df_hist[tuan_can_dien].astype(object)
                 for idx, row in df_hist.iterrows():
                     tram_name = str(row[ten_tram_col]).strip().upper()
                     if tram_name in station_results_by_name and station_results_by_name[tram_name] != "NODATA":
@@ -616,4 +618,3 @@ with tab4g:
 
 with tab3g:
     render_cell_details(df_3g_prep, active_kpis_3g, cols_3g, "3G")
-# AUTO_REBOOT_TIME: 1792459814.8859892
