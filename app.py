@@ -315,6 +315,9 @@ for st_code in all_stations_ui:
     else: kq_type = "Pass"
     
     station_results_by_name[st_name] = kq_type
+    # Ánh xạ thêm tên gốc "BV CHỢ RẪY" để khớp với file Tonghop.xlsx
+    if grouped_cr_key and st_code == grouped_cr_key:
+        station_results_by_name["BV CHỢ RẪY"] = kq_type
 
 
 # =====================================================================================
