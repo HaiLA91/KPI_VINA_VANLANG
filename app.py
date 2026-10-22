@@ -591,7 +591,7 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
                     cols_html += f"<td style='text-align:right;' class='kpi-fail'>{formatted_val}</td>"
                 else: cols_html += f"<td style='text-align:right;'>{formatted_val}</td>"
 
-            status_badge = "<span class='badge-pass'>ĐẠT</span>" if row_is_pass else "<span class='badge-fail'>FAIL</span>"
+            status_badge = "<span class='badge-pass'>PASS</span>" if row_is_pass else "<span class='badge-fail'>FAIL</span>"
             
             if net_label == '4G':
                 val_en = str(row[col_enodeb]).replace('.0', '') if col_enodeb and not pd.isna(row[col_enodeb]) else "-"
