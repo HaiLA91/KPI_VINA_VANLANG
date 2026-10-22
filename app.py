@@ -497,7 +497,7 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
 
         if not has_any_data: badge, kq_type = "<span class='badge-nodata'>Chưa có DL</span>", "NODATA"
         elif station_failed: badge, kq_type = "<span class='badge-fail'>FAIL</span>", "FAIL"
-        else: badge, kq_type = "<span class='badge-pass'>ĐẠT</span>", "PASS"
+        else: badge, kq_type = "<span class='badge-pass'>PASS</span>", "PASS"
 
         if filter_choice == "Chỉ các trạm ĐẠT" and kq_type != "PASS": continue
         if filter_choice == "Các trạm KHÔNG ĐẠT" and kq_type != "FAIL": continue
