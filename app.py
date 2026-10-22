@@ -568,7 +568,7 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
             else:
                 avg_cols_html += f"<td style='text-align:right; border-bottom: 2px solid #444;'><span style='color:#ffffff;'>{formatted_val}</span></td>"
 
-        avg_badge = "<span class='badge-pass'>ĐẠT</span>" if avg_is_pass else "<span class='badge-fail'>FAIL</span>"
+        avg_badge = "<span class='badge-pass'>PASS</span>" if avg_is_pass else "<span class='badge-fail'>FAIL</span>"
         
         if net_label == '4G':
             html_blocks.append(f"<tr style='background-color: #1a1a1a;'><td class='f-cell-sticky' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffeb3b;'><b>TB TRẠM</b></span></td><td class='col-fit' style='text-align:center; border-bottom: 2px solid #444;'>{avg_badge}</td><td colspan='2' class='col-fit' style='color:#9e9e9e; text-align:center; border-bottom: 2px solid #444;'>Toàn trạm</td>{avg_cols_html}</tr>")
