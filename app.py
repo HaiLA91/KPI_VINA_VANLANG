@@ -252,11 +252,6 @@ def prepare_net_df(file_data, kpi_rules, net_type):
         for c in df.columns:
             if str(c).strip().upper() == 'CI': extra_cols['CI'] = c
 
-    # Lấy thêm cột "THAM KHẢO"
-    ref_col = next((c for c in df.columns if 'THAM KHẢO' in str(c).upper() or 'THAMKHAO' in str(c).upper()), None)
-    if ref_col:
-        extra_cols['THAM_KHAO'] = ref_col
-
     time_str_sample = ""
     if time_col and not df.empty:
         non_null_time = df[time_col].dropna()
@@ -319,7 +314,7 @@ for st_code in all_stations_ui:
 
 
 # =====================================================================================
-# 1. TIÊU ĐỀ CHÍNH
+# 1. ĐƯA TIÊU ĐỀ CHÍNH LÊN ĐẦU TIÊN
 # =====================================================================================
 st.markdown(f"<div class='main-title'>📊 Đánh Giá KPI VINAPHONE Tuần ({display_time})</div>", unsafe_allow_html=True)
 
@@ -514,7 +509,7 @@ with st.expander(f"📊 XEM CHI TIẾT TRUNG BÌNH CỦA {len(all_stations_ui)} 
 
 
 # =====================================================================================
-# 4. BẢNG CHI TIẾT CELL (ĐÃ THÊM CỘT THAM KHẢO)
+# 4. BẢNG CHI TIẾT CELL (ĐÃ THU GỌN CỘT CELL, KQ, ENODEB ID, CELL ID VỪA KHÍT NỘI DUNG)
 # =====================================================================================
 selected_stations = st.multiselect(
     "🔍 Chọn Mã Trạm cần xem chi tiết Cell:",
@@ -537,9 +532,6 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
         st.warning(f"Không có dữ liệu {net_label} cho trạm đã chọn!")
         return
 
-    col_ref = extra_cols.get('THAM_KHAO')
-    has_ref = col_ref is not None
-
     html_blocks = []
     for st_code, group in df_filtered.groupby('MATCHED_ST'):
         building_name = dict_station.get(st_code, '')
@@ -548,14 +540,10 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
         
         kpi_headers_html = "".join([f"<th style='text-align:right;'>{rule['label']}</th>" for rule in active_kpis.values()])
         
-        th_ref = "<th class='col-fit' style='text-align:center; color:#ffeb3b;'>THAM KHẢO</th>" if has_ref else ""
-
         if net_label == '4G': 
-            th_id = f"<th class='f-cell-sticky'>CELL</th><th class='col-fit' style='text-align:center;'>KQ</th><th class='col-fit'>ENODEB ID</th><th class='col-fit'>CELL ID</th>{th_ref}"
-            colspan_avg = 3 if has_ref else 2
+            th_id = "<th class='f-cell-sticky'>CELL</th><th class='col-fit' style='text-align:center;'>KQ</th><th class='col-fit'>ENODEB ID</th><th class='col-fit'>CELL ID</th>"
         else: 
-            th_id = f"<th class='f-cell-sticky'>CELL</th><th class='col-fit' style='text-align:center;'>KQ</th><th class='col-fit'>CI</th>{th_ref}"
-            colspan_avg = 2 if has_ref else 1
+            th_id = "<th class='f-cell-sticky'>CELL</th><th class='col-fit' style='text-align:center;'>KQ</th><th class='col-fit'>CI</th>"
         
         html_blocks.append(f"""
         <div class="header-station">
@@ -582,7 +570,10 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
 
         avg_badge = "<span class='badge-pass'>PASS</span>" if avg_is_pass else "<span class='badge-fail'>FAIL</span>"
         
-        html_blocks.append(f"<tr style='background-color: #1a1a1a;'><td class='f-cell-sticky' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffeb3b;'><b>TB TRẠM</b></span></td><td class='col-fit' style='text-align:center; border-bottom: 2px solid #444;'>{avg_badge}</td><td colspan='{colspan_avg}' class='col-fit' style='color:#9e9e9e; text-align:center; border-bottom: 2px solid #444;'>Toàn trạm</td>{avg_cols_html}</tr>")
+        if net_label == '4G':
+            html_blocks.append(f"<tr style='background-color: #1a1a1a;'><td class='f-cell-sticky' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffeb3b;'><b>TB TRẠM</b></span></td><td class='col-fit' style='text-align:center; border-bottom: 2px solid #444;'>{avg_badge}</td><td colspan='2' class='col-fit' style='color:#9e9e9e; text-align:center; border-bottom: 2px solid #444;'>Toàn trạm</td>{avg_cols_html}</tr>")
+        else:
+            html_blocks.append(f"<tr style='background-color: #1a1a1a;'><td class='f-cell-sticky' style='background-color: #1a1a1a !important; border-bottom: 2px solid #444;'><span style='color:#ffeb3b;'><b>TB TRẠM</b></span></td><td class='col-fit' style='text-align:center; border-bottom: 2px solid #444;'>{avg_badge}</td><td class='col-fit' style='color:#9e9e9e; text-align:center; border-bottom: 2px solid #444;'>Toàn trạm</td>{avg_cols_html}</tr>")
 
         col_enodeb = extra_cols.get('ENODEB')
         col_cellid = extra_cols.get('CELLID')
@@ -602,29 +593,24 @@ def render_cell_details(df, active_kpis, cols_info, net_label):
 
             status_badge = "<span class='badge-pass'>PASS</span>" if row_is_pass else "<span class='badge-fail'>FAIL</span>"
             
-            val_ref_str = ""
-            if has_ref:
-                v_ref = row.get(col_ref)
-                v_ref_txt = str(v_ref).strip() if pd.notna(v_ref) and str(v_ref).strip() not in ['nan', 'None'] else "-"
-                val_ref_str = f"<td class='col-fit' style='color:#ffeb3b; text-align:center; font-weight:bold;'>{v_ref_txt}</td>"
-
             if net_label == '4G':
                 val_en = str(row[col_enodeb]).replace('.0', '') if col_enodeb and not pd.isna(row[col_enodeb]) else "-"
                 val_cid = str(row[col_cellid]).replace('.0', '') if col_cellid and not pd.isna(row[col_cellid]) else "-"
                 if val_en == 'nan': val_en = "-"
                 if val_cid == 'nan': val_cid = "-"
-                html_blocks.append(f"<tr><td class='f-cell-sticky'>{cell_name}</td><td class='col-fit' style='text-align:center;'>{status_badge}</td><td class='col-fit' style='color:#aaa; text-align:center;'>{val_en}</td><td class='col-fit' style='color:#aaa; text-align:center;'>{val_cid}</td>{val_ref_str}{cols_html}</tr>")
+                html_blocks.append(f"<tr><td class='f-cell-sticky'>{cell_name}</td><td class='col-fit' style='text-align:center;'>{status_badge}</td><td class='col-fit' style='color:#aaa; text-align:center;'>{val_en}</td><td class='col-fit' style='color:#aaa; text-align:center;'>{val_cid}</td>{cols_html}</tr>")
             else:
-                val_ci_str = str(row[col_ci]).replace('.0', '') if col_ci and not pd.isna(row[col_ci]) else "-"
-                if val_ci_str == 'nan': val_ci_str = "-"
-                html_blocks.append(f"<tr><td class='f-cell-sticky'>{cell_name}</td><td class='col-fit' style='text-align:center;'>{status_badge}</td><td class='col-fit' style='color:#aaa; text-align:center;'>{val_ci_str}</td>{val_ref_str}{cols_html}</tr>")
+                val_ci = str(row[col_ci]).replace('.0', '') if col_ci and not pd.isna(row[col_ci]) else "-"
+                if val_ci == 'nan': val_ci = "-"
+                html_blocks.append(f"<tr><td class='f-cell-sticky'>{cell_name}</td><td class='col-fit' style='text-align:center;'>{status_badge}</td><td class='col-fit' style='color:#aaa; text-align:center;'>{val_ci}</td>{cols_html}</tr>")
 
         html_blocks.append("</tbody></table></div>")
 
     st.markdown("".join(html_blocks), unsafe_allow_html=True)
 
 with tab4g:
-    render_cell_details(df_4g_prep, active_kpis_4g, cols_4g, '4G')
+    render_cell_details(df_4g_prep, active_kpis_4g, cols_4g, "4G")
 
 with tab3g:
-    render_cell_details(df_3g_prep, active_kpis_3g, cols_3g, '3G')
+    render_cell_details(df_3g_prep, active_kpis_3g, cols_3g, "3G")
+# AUTO_REBOOT_TIME: 1792660960.3279452
